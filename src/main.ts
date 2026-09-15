@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import cookieParser from 'cookie-parser';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -10,6 +11,7 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get<AppConfig>(APP_CONFIG);
 
+  app.use(cookieParser());
   app.setGlobalPrefix(config.apiPrefix);
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true }),
@@ -21,6 +23,7 @@ async function bootstrap(): Promise<void> {
     .setTitle('Themis Core API')
     .setDescription('Backend, relayer y contratos de Themis')
     .setVersion('0.1.0')
+    .addCookieAuth('access_token')
     .build();
 
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, swagger));

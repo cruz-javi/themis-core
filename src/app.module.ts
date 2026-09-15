@@ -6,6 +6,7 @@ import { AiClientModule } from './shared/http/ai-client.module';
 import { HealthModule } from './modules/health/health.module';
 import { DemoModule } from './modules/demo/demo.module';
 import { MockSsoModule } from './modules/mock-sso/mock-sso.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { MockSsoModule } from './modules/mock-sso/mock-sso.module';
     HealthModule,
     DemoModule,
     MockSsoModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

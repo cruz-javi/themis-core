@@ -83,7 +83,13 @@ src/shared/           Prisma, blockchain y cliente de themis-ai
 src/modules/health/   Estado de las dependencias
 src/modules/demo/     Modulo de ejemplo con las 4 capas
 src/modules/mock-sso/ Simulacion del SSO institucional (HU-00, ver su propio README)
+src/modules/auth/     Login de Administrador/Autoridad/Auditor (HU00_1, ver su propio README)
 ```
+
+`src/shared/auth/` (transversal, no es un modulo) provee `JwtAuthGuard`, `RolesGuard` y
+`@Roles(...)` para que cualquier modulo futuro proteja sus propios endpoints sin reimplementar la
+verificacion de JWT. Ver la trampa conocida sobre `PassportModule.register(...)` en el CLAUDE.md
+raiz si un modulo nuevo falla al arrancar con `UnknownDependenciesException: AuthModuleOptions`.
 
 ### El patron de los modulos
 
@@ -114,6 +120,11 @@ Son andamiaje temporal. Borralos cuando empieces los modulos reales.
 `POST /api/v1/mock-sso/login` no es andamiaje temporal: es HU-00, precursor real de CU-05. Ver
 `src/modules/mock-sso/README.md` para las credenciales de prueba sembradas.
 
+`POST /api/v1/auth/login`, `GET /api/v1/auth/me` y `POST /api/v1/auth/logout` tampoco son
+andamiaje: es HU00_1, la autenticación real de Administrador/Autoridad/Auditor. La sesión viaja en
+una cookie `httpOnly` (`access_token`), nunca en el body de la respuesta ni en un header
+`Authorization` — ver `src/modules/auth/README.md` para las credenciales de prueba sembradas.
+
 ## Docker
 
 ```bash
@@ -134,6 +145,7 @@ Levanta el nodo Hardhat y el backend. La base de datos siempre es Neon, no hay P
 | `pnpm prisma:migrate` | Crea y aplica una migracion |
 | `pnpm prisma:studio` | Explorador visual de la base de datos |
 | `pnpm run seed:mock-sso` | Siembra usuarios de prueba del mock SSO (HU-00) |
+| `pnpm run seed:platform-users` | Siembra cuentas de prueba de Admin/Autoridad/Auditor (HU00_1) |
 | `pnpm chain:node` | Nodo blockchain local |
 | `pnpm chain:compile` | Compila los contratos |
 | `pnpm chain:deploy:local` | Despliega en el nodo local |

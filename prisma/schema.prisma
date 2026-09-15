@@ -40,6 +40,23 @@ enum EstadoAcademicoSso {
   INACTIVO
 }
 
+enum PlatformRole {
+  ADMIN
+  AUTORIDAD_REGISTRO
+  AUDITOR
+}
+
+model PlatformUser {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  passwordHash   String       @map("password_hash")
+  nombreCompleto String       @map("nombre_completo")
+  role           PlatformRole
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@map("platform_users")
+}
+
 model MockSsoUser {
   id                  String             @id @default(uuid())
   codigoInstitucional String             @unique @map("codigo_institucional")

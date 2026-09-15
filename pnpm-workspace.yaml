@@ -6,3 +6,4 @@ allowBuilds:
   "@scarf/scarf": false
   '@parcel/watcher': false
   unrs-resolver: false
+  bcrypt: true
