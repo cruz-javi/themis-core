@@ -7,6 +7,8 @@ coverage/
 .env.local
 .env.*.local
 
+docker-compose.override.yml
+
 artifacts/
 cache/
 typechain-types/
