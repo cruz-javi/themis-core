@@ -4,3 +4,5 @@ allowBuilds:
   prisma: true
   keccak: true
   "@scarf/scarf": false
+  '@parcel/watcher': false
+  unrs-resolver: false

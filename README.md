@@ -66,6 +66,8 @@ pnpm start:dev
 | `CHAIN_ID` | 31337 en local |
 | `RELAYER_PRIVATE_KEY` | Clave que paga el gas |
 | `CONTRACT_ADDRESS` | Direccion del contrato desplegado |
+| `SSO_MOCK_SECRET` | Firma HMAC de las assertions del mock SSO (HU-00), minimo 32 caracteres |
+| `SSO_MOCK_TOKEN_TTL_SECONDS` | Tiempo de vida de esas assertions, en segundos |
 
 El arranque falla con un mensaje explicito si falta alguna. La validacion vive en `src/config/env.validation.ts`.
 
@@ -80,6 +82,7 @@ src/config/           Configuracion validada con zod
 src/shared/           Prisma, blockchain y cliente de themis-ai
 src/modules/health/   Estado de las dependencias
 src/modules/demo/     Modulo de ejemplo con las 4 capas
+src/modules/mock-sso/ Simulacion del SSO institucional (HU-00, ver su propio README)
 ```
 
 ### El patron de los modulos
@@ -108,6 +111,9 @@ Son andamiaje temporal. Borralos cuando empieces los modulos reales.
 | `GET /api/v1/demo/chain` | Lectura del contrato |
 | `POST /api/v1/demo/chain/ping` | Transaccion firmada por el relayer |
 
+`POST /api/v1/mock-sso/login` no es andamiaje temporal: es HU-00, precursor real de CU-05. Ver
+`src/modules/mock-sso/README.md` para las credenciales de prueba sembradas.
+
 ## Docker
 
 ```bash
@@ -123,8 +129,15 @@ Levanta el nodo Hardhat y el backend. La base de datos siempre es Neon, no hay P
 | `pnpm start:dev` | Backend con recarga en caliente |
 | `pnpm build` | Compila a `dist/` |
 | `pnpm lint` | Chequeo de tipos |
+| `pnpm test` | Tests unitarios (Jest) |
+| `pnpm run test:e2e` | Tests end-to-end (Jest + Supertest, contra Postgres real) |
 | `pnpm prisma:migrate` | Crea y aplica una migracion |
 | `pnpm prisma:studio` | Explorador visual de la base de datos |
+| `pnpm run seed:mock-sso` | Siembra usuarios de prueba del mock SSO (HU-00) |
 | `pnpm chain:node` | Nodo blockchain local |
 | `pnpm chain:compile` | Compila los contratos |
 | `pnpm chain:deploy:local` | Despliega en el nodo local |
+
+Los tests requieren Node ejecutado con `--experimental-vm-modules` (ya configurado en los scripts
+`test`/`test:e2e`) porque las dependencias de `@nestjs/*` en el stack aprobado se resuelven como
+ESM y Jest 30 solo puede `require()` ESM de forma sincrona con esa flag activa.

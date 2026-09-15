@@ -21,6 +21,9 @@ export const envSchema = z.object({
   CHAIN_ID: z.coerce.number().int().positive().default(31337),
   RELAYER_PRIVATE_KEY: z.string().min(1),
   CONTRACT_ADDRESS: z.string().default(''),
+
+  SSO_MOCK_SECRET: z.string().min(32),
+  SSO_MOCK_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(300),
 });
 
 export type Env = z.infer<typeof envSchema>;

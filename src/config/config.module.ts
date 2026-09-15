@@ -34,6 +34,10 @@ import type { AppConfig } from './configuration';
           CHAIN_ID: configService.get('CHAIN_ID'),
           RELAYER_PRIVATE_KEY: configService.get('RELAYER_PRIVATE_KEY'),
           CONTRACT_ADDRESS: configService.get('CONTRACT_ADDRESS'),
+          SSO_MOCK_SECRET: configService.get('SSO_MOCK_SECRET'),
+          SSO_MOCK_TOKEN_TTL_SECONDS: configService.get(
+            'SSO_MOCK_TOKEN_TTL_SECONDS',
+          ),
         };
 
         return buildConfig(env as Env);

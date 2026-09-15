@@ -5,6 +5,7 @@ import { BlockchainModule } from './shared/blockchain/blockchain.module';
 import { AiClientModule } from './shared/http/ai-client.module';
 import { HealthModule } from './modules/health/health.module';
 import { DemoModule } from './modules/demo/demo.module';
+import { MockSsoModule } from './modules/mock-sso/mock-sso.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { DemoModule } from './modules/demo/demo.module';
     AiClientModule,
     HealthModule,
     DemoModule,
+    MockSsoModule,
   ],
 })
 export class AppModule {}

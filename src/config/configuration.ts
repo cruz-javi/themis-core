@@ -23,6 +23,10 @@ export interface AppConfig {
     relayerPrivateKey: string;
     contractAddress: string;
   };
+  ssoMock: {
+    secret: string;
+    tokenTtlSeconds: number;
+  };
 }
 
 export function buildConfig(env: Env): AppConfig {
@@ -50,6 +54,10 @@ export function buildConfig(env: Env): AppConfig {
       chainId: env.CHAIN_ID,
       relayerPrivateKey: env.RELAYER_PRIVATE_KEY,
       contractAddress: env.CONTRACT_ADDRESS,
+    },
+    ssoMock: {
+      secret: env.SSO_MOCK_SECRET,
+      tokenTtlSeconds: env.SSO_MOCK_TOKEN_TTL_SECONDS,
     },
   };
 }

@@ -17,3 +17,39 @@ model PingLog {
   @@index([createdAt])
   @@map("ping_log")
 }
+
+enum FacultadSso {
+  FICCT
+}
+
+enum CarreraSso {
+  INGENIERIA_SISTEMAS
+  INGENIERIA_INFORMATICA
+  INGENIERIA_REDES_TELECOMUNICACIONES
+  INGENIERIA_ROBOTICA
+}
+
+enum TipoUsuarioSso {
+  ESTUDIANTE
+  DOCENTE
+  ADMINISTRATIVO
+}
+
+enum EstadoAcademicoSso {
+  ACTIVO
+  INACTIVO
+}
+
+model MockSsoUser {
+  id                  String             @id @default(uuid())
+  codigoInstitucional String             @unique @map("codigo_institucional")
+  passwordHash        String             @map("password_hash")
+  nombreCompleto      String             @map("nombre_completo")
+  facultad            FacultadSso
+  carrera             CarreraSso
+  tipoUsuario         TipoUsuarioSso     @map("tipo_usuario")
+  estadoAcademico     EstadoAcademicoSso @map("estado_academico")
+  createdAt           DateTime           @default(now()) @map("created_at")
+
+  @@map("mock_sso_users")
+}
