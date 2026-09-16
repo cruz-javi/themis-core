@@ -28,3 +28,5 @@ Thumbs.db
 *.tsbuildinfo
 .tmp/
 tmp/
+CLAUDE.md
+README.md

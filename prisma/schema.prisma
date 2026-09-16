@@ -44,6 +44,7 @@ enum PlatformRole {
   ADMIN
   AUTORIDAD_REGISTRO
   AUDITOR
+  SUPERUSUARIO
 }
 
 model PlatformUser {

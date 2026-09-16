@@ -25,6 +25,8 @@ describe('auth (e2e)', () => {
   let prisma: PrismaService;
   let config: AppConfig;
   const email = `e2e-auth-${Date.now()}@themis.dev`;
+  const superusuarioEmail = `e2e-superusuario-${Date.now()}@themis.dev`;
+  const createdEmails: string[] = [];
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -48,10 +50,21 @@ describe('auth (e2e)', () => {
         role: 'ADMIN',
       },
     });
+
+    await prisma.platformUser.create({
+      data: {
+        email: superusuarioEmail,
+        passwordHash: await hashPassword('clave-e2e'),
+        nombreCompleto: 'Superusuario E2E Auth',
+        role: 'SUPERUSUARIO',
+      },
+    });
   });
 
   afterAll(async () => {
-    await prisma.platformUser.deleteMany({ where: { email } });
+    await prisma.platformUser.deleteMany({
+      where: { email: { in: [email, superusuarioEmail, ...createdEmails] } },
+    });
     await app.close();
   });
 
@@ -150,5 +163,102 @@ describe('auth (e2e)', () => {
       .send({ email: 'nuevo@themis.dev', password: 'x' });
 
     expect(response.status).toBe(404);
+  });
+
+  describe('POST /auth/users', () => {
+    async function loginAs(loginEmail: string, password: string) {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: loginEmail, password });
+
+      return extractCookie(
+        login.headers['set-cookie'] as unknown as string[] | undefined,
+      );
+    }
+
+    it('un SUPERUSUARIO puede crear una cuenta ADMIN/AUTORIDAD_REGISTRO/AUDITOR', async () => {
+      const cookie = await loginAs(superusuarioEmail, 'clave-e2e');
+      const newEmail = `e2e-creada-${Date.now()}@themis.dev`;
+      createdEmails.push(newEmail);
+
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/users')
+        .set('Cookie', cookie)
+        .send({
+          email: newEmail,
+          password: 'unaClaveSegura123',
+          nombreCompleto: 'Cuenta Creada E2E',
+          role: 'AUTORIDAD_REGISTRO',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toMatchObject({
+        email: newEmail,
+        nombreCompleto: 'Cuenta Creada E2E',
+        role: 'AUTORIDAD_REGISTRO',
+      });
+      expect(response.body.passwordHash).toBeUndefined();
+    });
+
+    it('responde 403 si el solicitante no es SUPERUSUARIO', async () => {
+      const cookie = await loginAs(email, 'clave-e2e');
+
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/users')
+        .set('Cookie', cookie)
+        .send({
+          email: `e2e-rechazada-${Date.now()}@themis.dev`,
+          password: 'unaClaveSegura123',
+          nombreCompleto: 'No Deberia Crearse',
+          role: 'AUDITOR',
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('responde 401 sin cookie de sesion', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/users')
+        .send({
+          email: `e2e-sin-sesion-${Date.now()}@themis.dev`,
+          password: 'unaClaveSegura123',
+          nombreCompleto: 'Sin Sesion',
+          role: 'AUDITOR',
+        });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('responde 400 si se intenta crear otro SUPERUSUARIO', async () => {
+      const cookie = await loginAs(superusuarioEmail, 'clave-e2e');
+
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/users')
+        .set('Cookie', cookie)
+        .send({
+          email: `e2e-otro-super-${Date.now()}@themis.dev`,
+          password: 'unaClaveSegura123',
+          nombreCompleto: 'Otro Superusuario',
+          role: 'SUPERUSUARIO',
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('responde 409 si el email ya existe', async () => {
+      const cookie = await loginAs(superusuarioEmail, 'clave-e2e');
+
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/users')
+        .set('Cookie', cookie)
+        .send({
+          email, // ya sembrado en beforeAll
+          password: 'unaClaveSegura123',
+          nombreCompleto: 'Email Repetido',
+          role: 'AUDITOR',
+        });
+
+      expect(response.status).toBe(409);
+    });
   });
 });

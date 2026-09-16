@@ -54,7 +54,7 @@ Son independientes, con propósitos distintos. Ver [`src/modules/auth/README.md`
 - **`src/modules/auth/`** (HU00_1) — sesión del equipo Admin/Autoridad/Auditor que opera el portal web. JWT viaja en **cookie httpOnly** (`access_token`), nunca en `Authorization: Bearer` ni en el body. `JwtStrategy` lee de `req.cookies`, no de headers.
 - **`src/modules/mock-sso/`** (HU-00) — simula el SSO institucional real de la universidad (no disponible durante el piloto). **Andamiaje temporal**: se retira el día que exista integración real, sin tocar el contrato `scoped_token_hash` documentado en `docs/UT/HU00/UT-CORE/README.md`. Precursor de CU-05 (registro del votante, ver doc consolidado). Seed: `pnpm run seed:mock-sso`, password única `123123`, códigos fijos reproducibles documentados en su README (`220999999` habilitado, `221000000` inactivo, `221004999` no-estudiante).
 
-Cuenta seed de plataforma (`pnpm run seed:platform-users`): `admin@themis.dev` / `autoridad@themis.dev` / `auditor@themis.dev`, todas con password `123123`.
+Cuenta seed de plataforma (`pnpm run seed:platform-users`): `admin@themis.dev` / `autoridad@themis.dev` / `auditor@themis.dev` / `superusuario@themis.dev`, todas con password `123123`. `SUPERUSUARIO` es el único rol sin ruta de auto-creación — las otras tres cuentas se crean desde `POST /auth/users` (guardado con `RolesGuard`, solo `SUPERUSUARIO`), ver `src/modules/auth/README.md`.
 
 ## Endpoints de andamiaje temporal (borrar cuando empiecen los módulos reales)
 

@@ -8,7 +8,7 @@ const PASSWORD = '123123';
 interface SeedAccount {
   email: string;
   nombreCompleto: string;
-  role: 'ADMIN' | 'AUTORIDAD_REGISTRO' | 'AUDITOR';
+  role: 'ADMIN' | 'AUTORIDAD_REGISTRO' | 'AUDITOR' | 'SUPERUSUARIO';
 }
 
 const ACCOUNTS: SeedAccount[] = [
@@ -26,6 +26,11 @@ const ACCOUNTS: SeedAccount[] = [
     email: 'auditor@themis.dev',
     nombreCompleto: 'Auditor Externo Themis',
     role: 'AUDITOR',
+  },
+  {
+    email: 'superusuario@themis.dev',
+    nombreCompleto: 'Superusuario Themis',
+    role: 'SUPERUSUARIO',
   },
 ];
 

@@ -1,4 +1,8 @@
-export type PlatformRole = 'ADMIN' | 'AUTORIDAD_REGISTRO' | 'AUDITOR';
+export type PlatformRole =
+  | 'ADMIN'
+  | 'AUTORIDAD_REGISTRO'
+  | 'AUDITOR'
+  | 'SUPERUSUARIO';
 
 export class PlatformUser {
   constructor(

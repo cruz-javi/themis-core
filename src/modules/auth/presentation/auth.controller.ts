@@ -17,10 +17,15 @@ import {
 } from '@nestjs/swagger';
 import { LoginPlatformUserUseCase } from '../application/login-platform-user.usecase';
 import { GetMeUseCase } from '../application/get-me.usecase';
+import { CreateUserUseCase } from '../application/create-user.usecase';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { MeResponseDto } from './dto/me-response.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserResponseDto } from './dto/create-user-response.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
+import { RolesGuard } from '../../../shared/auth/roles.guard';
+import { Roles } from '../../../shared/auth/roles.decorator';
 import { CurrentUser } from '../../../shared/auth/current-user.decorator';
 import { RequestUser } from '../../../shared/auth/jwt.strategy';
 import {
@@ -36,6 +41,7 @@ export class AuthController {
   constructor(
     private readonly loginPlatformUser: LoginPlatformUserUseCase,
     private readonly getMe: GetMeUseCase,
+    private readonly createUser: CreateUserUseCase,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -82,5 +88,31 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Sin sesion o sesion expirada' })
   async me(@CurrentUser() user: RequestUser): Promise<MeResponseDto> {
     return this.getMe.execute(user.sub);
+  }
+
+  @Post('users')
+  @HttpCode(201)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERUSUARIO')
+  @ApiCookieAuth()
+  @ApiOperation({
+    summary:
+      'Crea una cuenta de plataforma (ADMIN/AUTORIDAD_REGISTRO/AUDITOR). Solo SUPERUSUARIO.',
+  })
+  @ApiResponse({ status: 201, type: CreateUserResponseDto })
+  @ApiResponse({ status: 401, description: 'Sin sesion o sesion expirada' })
+  @ApiResponse({ status: 403, description: 'El solicitante no es SUPERUSUARIO' })
+  @ApiResponse({ status: 409, description: 'Ya existe una cuenta con ese email' })
+  async createUserAccount(
+    @Body() body: CreateUserDto,
+  ): Promise<CreateUserResponseDto> {
+    const user = await this.createUser.execute(body);
+
+    return {
+      id: user.id,
+      email: user.email,
+      nombreCompleto: user.nombreCompleto,
+      role: user.role as CreateUserResponseDto['role'],
+    };
   }
 }
