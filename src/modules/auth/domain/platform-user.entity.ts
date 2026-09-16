@@ -11,6 +11,7 @@ export class PlatformUser {
     public readonly passwordHash: string,
     public readonly nombreCompleto: string,
     public readonly role: PlatformRole,
+    public readonly isActive: boolean,
     public readonly createdAt: Date,
   ) {}
 }

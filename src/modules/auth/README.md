@@ -37,12 +37,25 @@ Reutiliza `JWT_SECRET` (ya presente en `.env.example` desde el bootstrap, anotad
 | `POST /auth/login` | — | Sin guard (otorga la sesión) | `{ role, nombreCompleto }` + `Set-Cookie: access_token` |
 | `GET /auth/me` | — | `JwtAuthGuard` (cookie `access_token`) | `{ sub, role, nombreCompleto }` |
 | `POST /auth/logout` | — | Sin guard | `{ ok: true }` + limpia la cookie |
-| `POST /auth/users` | Crea una cuenta `ADMIN`/`AUTORIDAD_REGISTRO`/`AUDITOR` | `JwtAuthGuard` + `RolesGuard(SUPERUSUARIO)` | `{ id, email, nombreCompleto, role }` (201); `403` si no es SUPERUSUARIO; `409` si el email ya existe; `400` si `role` es `SUPERUSUARIO` |
+| `POST /auth/users` | Crea una cuenta `ADMIN`/`AUTORIDAD_REGISTRO`/`AUDITOR` | `JwtAuthGuard` + `RolesGuard(SUPERUSUARIO)` | `{ id, email, nombreCompleto, role, isActive, createdAt }` (201); `403` si no es SUPERUSUARIO; `409` si el email ya existe; `400` si `role` es `SUPERUSUARIO` |
+| `GET /auth/users?page=&pageSize=` | Lista paginada de cuentas **activas** | `JwtAuthGuard` + `RolesGuard(SUPERUSUARIO)` | `{ data: [...], total, page, pageSize }`; `page` desde 1, `pageSize` 1-100 (default 20) |
+| `PATCH /auth/users/:id` | Edita `nombreCompleto`/`role` (`ADMIN`/`AUTORIDAD_REGISTRO`/`AUDITOR`) | `JwtAuthGuard` + `RolesGuard(SUPERUSUARIO)` | `{ id, email, nombreCompleto, role, isActive, createdAt }`; `404` si no existe, ya está desactivada, o es SUPERUSUARIO |
+| `DELETE /auth/users/:id` | Desactiva la cuenta (soft-delete, `isActive = false`) | `JwtAuthGuard` + `RolesGuard(SUPERUSUARIO)` | `{ ok: true }`; `404` si no existe, ya está desactivada, o es SUPERUSUARIO |
 
 `POST /auth/users` es el primer consumidor real de `RolesGuard`/`@Roles(...)` en el codebase — el
 orden de los guards importa: `JwtAuthGuard` primero (puebla `request.user` desde la cookie),
-`RolesGuard` después (lee `request.user.role`). `SUPERUSUARIO` no es creable por esta ruta ni por
-ninguna otra — la única cuenta de ese rol es la sembrada por el seed.
+`RolesGuard` después (lee `request.user.role`). `SUPERUSUARIO` no es creable, editable ni
+desactivable por ninguna de estas rutas — la única cuenta de ese rol es la sembrada por el seed.
+
+**Soft-delete, no borrado físico.** `PlatformUser.isActive` (default `true`) es la única columna
+de estado — no hay `deletedAt`. Una cuenta desactivada: no aparece en `GET /auth/users`, no puede
+loguearse (`POST /auth/login` responde el mismo `AUTH_INVALID_CREDENTIALS` genérico, sin revelar
+que la cuenta existe pero está deshabilitada) y, si ya tenía una sesión JWT vigente, esa sesión
+deja de resolver en `GET /auth/me` (`AUTH_SESSION_EXPIRED`).
+
+**Paginación**: `GET /auth/users` es el primer endpoint paginado del backend — no había una
+convención previa que seguir (ver `docs/HU`/UT si se agrega otra lista paginada, debería reusar
+esta misma forma: query `page`/`pageSize`, respuesta `{ data, total, page, pageSize }`).
 
 **La sesión viaja en una cookie `httpOnly`, no en un header `Authorization`.** `JwtStrategy` lee
 el JWT de `req.cookies.access_token` (vía `cookie-parser`, registrado en `main.ts`) — nunca de

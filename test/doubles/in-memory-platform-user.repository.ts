@@ -1,7 +1,10 @@
 import { PlatformUser } from '../../src/modules/auth/domain/platform-user.entity';
 import {
   CreatePlatformUserInput,
+  FindAllActiveParams,
+  FindAllActiveResult,
   PlatformUserRepository,
+  UpdatePlatformUserInput,
 } from '../../src/modules/auth/domain/platform-user.repository';
 
 export class InMemoryPlatformUserRepository implements PlatformUserRepository {
@@ -29,9 +32,62 @@ export class InMemoryPlatformUserRepository implements PlatformUserRepository {
       input.passwordHash,
       input.nombreCompleto,
       input.role,
+      true,
       new Date(),
     );
     this.users.set(user.id, user);
     return user;
+  }
+
+  async findAllActive(params: FindAllActiveParams): Promise<FindAllActiveResult> {
+    const active = [...this.users.values()]
+      .filter((user) => user.isActive)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return {
+      items: active.slice(params.skip, params.skip + params.take),
+      total: active.length,
+    };
+  }
+
+  async update(
+    id: string,
+    input: UpdatePlatformUserInput,
+  ): Promise<PlatformUser | null> {
+    const existing = this.users.get(id);
+    if (!existing) {
+      return null;
+    }
+
+    const updated = new PlatformUser(
+      existing.id,
+      existing.email,
+      existing.passwordHash,
+      input.nombreCompleto,
+      input.role,
+      existing.isActive,
+      existing.createdAt,
+    );
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  async softDelete(id: string): Promise<PlatformUser | null> {
+    const existing = this.users.get(id);
+    if (!existing) {
+      return null;
+    }
+
+    const deactivated = new PlatformUser(
+      existing.id,
+      existing.email,
+      existing.passwordHash,
+      existing.nombreCompleto,
+      existing.role,
+      false,
+      existing.createdAt,
+    );
+    this.users.set(id, deactivated);
+    return deactivated;
   }
 }

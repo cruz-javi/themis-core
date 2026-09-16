@@ -21,8 +21,9 @@ export class GetMeUseCase {
   async execute(userId: string): Promise<GetMeOutput> {
     const user = await this.repository.findById(userId);
 
-    if (!user) {
-      // La sesion era valida (firma+exp ok) pero la cuenta ya no existe.
+    if (!user || !user.isActive) {
+      // La sesion era valida (firma+exp ok) pero la cuenta ya no existe o fue
+      // desactivada (soft-delete) despues de emitido el JWT.
       throw new UnauthorizedException('AUTH_SESSION_EXPIRED');
     }
 

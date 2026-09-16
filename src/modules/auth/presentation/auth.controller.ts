@@ -1,10 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
+  Param,
+  Patch,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -18,11 +22,17 @@ import {
 import { LoginPlatformUserUseCase } from '../application/login-platform-user.usecase';
 import { GetMeUseCase } from '../application/get-me.usecase';
 import { CreateUserUseCase } from '../application/create-user.usecase';
+import { ListPlatformUsersUseCase } from '../application/list-platform-users.usecase';
+import { UpdatePlatformUserUseCase } from '../application/update-platform-user.usecase';
+import { DeactivatePlatformUserUseCase } from '../application/deactivate-platform-user.usecase';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { MeResponseDto } from './dto/me-response.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { CreateUserResponseDto } from './dto/create-user-response.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { ListUsersResponseDto } from './dto/list-users-response.dto';
+import { PlatformUserResponseDto } from './dto/platform-user-response.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { RolesGuard } from '../../../shared/auth/roles.guard';
 import { Roles } from '../../../shared/auth/roles.decorator';
@@ -42,6 +52,9 @@ export class AuthController {
     private readonly loginPlatformUser: LoginPlatformUserUseCase,
     private readonly getMe: GetMeUseCase,
     private readonly createUser: CreateUserUseCase,
+    private readonly listPlatformUsers: ListPlatformUsersUseCase,
+    private readonly updatePlatformUser: UpdatePlatformUserUseCase,
+    private readonly deactivatePlatformUser: DeactivatePlatformUserUseCase,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -99,20 +112,100 @@ export class AuthController {
     summary:
       'Crea una cuenta de plataforma (ADMIN/AUTORIDAD_REGISTRO/AUDITOR). Solo SUPERUSUARIO.',
   })
-  @ApiResponse({ status: 201, type: CreateUserResponseDto })
+  @ApiResponse({ status: 201, type: PlatformUserResponseDto })
   @ApiResponse({ status: 401, description: 'Sin sesion o sesion expirada' })
   @ApiResponse({ status: 403, description: 'El solicitante no es SUPERUSUARIO' })
   @ApiResponse({ status: 409, description: 'Ya existe una cuenta con ese email' })
   async createUserAccount(
     @Body() body: CreateUserDto,
-  ): Promise<CreateUserResponseDto> {
+  ): Promise<PlatformUserResponseDto> {
     const user = await this.createUser.execute(body);
+    return this.toResponseDto(user);
+  }
 
+  @Get('users')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERUSUARIO')
+  @ApiCookieAuth()
+  @ApiOperation({
+    summary:
+      'Lista paginada de cuentas de plataforma activas (ADMIN/AUTORIDAD_REGISTRO/AUDITOR/SUPERUSUARIO). Solo SUPERUSUARIO.',
+  })
+  @ApiResponse({ status: 200, type: ListUsersResponseDto })
+  @ApiResponse({ status: 401, description: 'Sin sesion o sesion expirada' })
+  @ApiResponse({ status: 403, description: 'El solicitante no es SUPERUSUARIO' })
+  async listUserAccounts(
+    @Query() query: ListUsersQueryDto,
+  ): Promise<ListUsersResponseDto> {
+    const result = await this.listPlatformUsers.execute(query);
+
+    return {
+      data: result.data.map((user) => this.toResponseDto(user)),
+      total: result.total,
+      page: result.page,
+      pageSize: result.pageSize,
+    };
+  }
+
+  @Patch('users/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERUSUARIO')
+  @ApiCookieAuth()
+  @ApiOperation({
+    summary:
+      'Edita nombreCompleto/role de una cuenta de plataforma. No aplica a SUPERUSUARIO. Solo SUPERUSUARIO.',
+  })
+  @ApiResponse({ status: 200, type: PlatformUserResponseDto })
+  @ApiResponse({ status: 401, description: 'Sin sesion o sesion expirada' })
+  @ApiResponse({ status: 403, description: 'El solicitante no es SUPERUSUARIO' })
+  @ApiResponse({
+    status: 404,
+    description: 'La cuenta no existe, ya esta desactivada, o es SUPERUSUARIO',
+  })
+  async updateUserAccount(
+    @Param('id') id: string,
+    @Body() body: UpdateUserDto,
+  ): Promise<PlatformUserResponseDto> {
+    const user = await this.updatePlatformUser.execute({ id, ...body });
+    return this.toResponseDto(user);
+  }
+
+  @Delete('users/:id')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPERUSUARIO')
+  @ApiCookieAuth()
+  @ApiOperation({
+    summary:
+      'Desactiva (soft-delete) una cuenta de plataforma. No aplica a SUPERUSUARIO. Solo SUPERUSUARIO.',
+  })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 401, description: 'Sin sesion o sesion expirada' })
+  @ApiResponse({ status: 403, description: 'El solicitante no es SUPERUSUARIO' })
+  @ApiResponse({
+    status: 404,
+    description: 'La cuenta no existe, ya esta desactivada, o es SUPERUSUARIO',
+  })
+  async deactivateUserAccount(@Param('id') id: string): Promise<{ ok: true }> {
+    await this.deactivatePlatformUser.execute(id);
+    return { ok: true };
+  }
+
+  private toResponseDto(user: {
+    id: string;
+    email: string;
+    nombreCompleto: string;
+    role: string;
+    isActive: boolean;
+    createdAt: Date;
+  }): PlatformUserResponseDto {
     return {
       id: user.id,
       email: user.email,
       nombreCompleto: user.nombreCompleto,
-      role: user.role as CreateUserResponseDto['role'],
+      role: user.role as PlatformUserResponseDto['role'],
+      isActive: user.isActive,
+      createdAt: user.createdAt,
     };
   }
 }

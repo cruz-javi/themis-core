@@ -31,7 +31,13 @@ export class LoginPlatformUserUseCase {
   ): Promise<LoginPlatformUserOutput> {
     const user = await this.repository.findByEmail(input.email);
 
-    if (!user || !(await verifyPassword(input.password, user.passwordHash))) {
+    if (
+      !user ||
+      !user.isActive ||
+      !(await verifyPassword(input.password, user.passwordHash))
+    ) {
+      // Una cuenta desactivada (soft-delete) responde igual que credenciales
+      // invalidas -- no revela que el email existe pero fue deshabilitado.
       throw new UnauthorizedException('AUTH_INVALID_CREDENTIALS');
     }
 

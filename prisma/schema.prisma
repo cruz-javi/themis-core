@@ -53,6 +53,7 @@ model PlatformUser {
   passwordHash   String       @map("password_hash")
   nombreCompleto String       @map("nombre_completo")
   role           PlatformRole
+  isActive       Boolean      @default(true) @map("is_active")
   createdAt      DateTime     @default(now()) @map("created_at")
 
   @@map("platform_users")

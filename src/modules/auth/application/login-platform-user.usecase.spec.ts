@@ -76,6 +76,17 @@ describe('LoginPlatformUserUseCase', () => {
     );
   });
 
+  it('rechaza una cuenta desactivada (soft-delete) con el mismo error que credenciales invalidas', async () => {
+    const user = await repository.findByEmail('admin@test.dev');
+    await repository.softDelete(user!.id);
+
+    await expect(
+      useCase.execute({ email: 'admin@test.dev', password: 'clave-correcta' }),
+    ).rejects.toMatchObject(
+      new UnauthorizedException('AUTH_INVALID_CREDENTIALS'),
+    );
+  });
+
   it('el JWT firmado nunca incluye email, passwordHash ni nombreCompleto en el payload', async () => {
     const result = await useCase.execute({
       email: 'admin@test.dev',
