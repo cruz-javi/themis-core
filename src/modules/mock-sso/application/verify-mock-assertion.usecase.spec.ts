@@ -16,6 +16,7 @@ function buildConfig(overrides: Partial<AppConfig['ssoMock']> = {}): AppConfig {
     ai: { baseUrl: '', token: '', timeoutMs: 1000 },
     chain: { rpcUrl: '', chainId: 1, relayerPrivateKey: '', contractAddress: '' },
     ssoMock: { secret: 'x'.repeat(32), tokenTtlSeconds: 300, ...overrides },
+    registrationSigning: { privateKeyJwk: '{}', publicKeyJwk: '{}' },
   };
 }
 

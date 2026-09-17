@@ -44,5 +44,6 @@ import { AuthModule } from '../auth/auth.module';
     { provide: AUTHORITY_REPOSITORY, useClass: PrismaAuthorityRepository },
     { provide: CHECKPOINT_POLICY_REPOSITORY, useClass: PrismaCheckpointPolicyRepository },
   ],
+  exports: [ELECTION_REPOSITORY],
 })
 export class ElectionsModule {}

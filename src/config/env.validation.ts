@@ -24,6 +24,11 @@ export const envSchema = z.object({
 
   SSO_MOCK_SECRET: z.string().min(32),
   SSO_MOCK_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+
+  // JWK (JSON) de la clave RSA-PSS de firma ciega de registro (CU-05).
+  // Generar con: pnpm registration:generate-signing-key
+  REGISTRATION_SIGNING_PRIVATE_KEY_JWK: z.string().min(1),
+  REGISTRATION_SIGNING_PUBLIC_KEY_JWK: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;

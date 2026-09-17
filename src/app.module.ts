@@ -8,6 +8,7 @@ import { DemoModule } from './modules/demo/demo.module';
 import { MockSsoModule } from './modules/mock-sso/mock-sso.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ElectionsModule } from './modules/elections/elections.module';
+import { RegistrationModule } from './modules/registration/registration.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ElectionsModule } from './modules/elections/elections.module';
     MockSsoModule,
     AuthModule,
     ElectionsModule,
+    RegistrationModule,
   ],
 })
 export class AppModule {}

@@ -52,13 +52,13 @@ Si un módulo nuevo necesita `@UseGuards(JwtAuthGuard)` o `RolesGuard`/`@Roles(.
 Son independientes, con propósitos distintos. Ver [`src/modules/auth/README.md`](src/modules/auth/README.md) y [`src/modules/mock-sso/README.md`](src/modules/mock-sso/README.md) para el detalle completo de cada uno.
 
 - **`src/modules/auth/`** (HU00_1) — sesión del equipo Admin/Autoridad/Auditor que opera el portal web. JWT viaja en **cookie httpOnly** (`access_token`), nunca en `Authorization: Bearer` ni en el body. `JwtStrategy` lee de `req.cookies`, no de headers.
-- **`src/modules/mock-sso/`** (HU-00) — simula el SSO institucional real de la universidad (no disponible durante el piloto). **Andamiaje temporal**: se retira el día que exista integración real, sin tocar el contrato `scoped_token_hash` documentado en `docs/UT/HU00/UT-CORE/README.md`. Precursor de CU-05 (registro del votante, ver doc consolidado). Seed: `pnpm run seed:mock-sso`, password única `123123`, códigos fijos reproducibles documentados en su README (`220999999` habilitado, `221000000` inactivo, `221004999` no-estudiante).
+- **`src/modules/mock-sso/`** (HU-00) — simula el SSO institucional real de la universidad (no disponible durante el piloto). **Andamiaje temporal**: se retira el día que exista integración real, sin tocar el contrato `scoped_token_hash` documentado en `docs/UT/HU00/UT-CORE/README.md`. Usado por CU-05 (registro del votante, ver `src/modules/registration/README.md`). Seed: `pnpm run seed:mock-sso`, password única `123123`, códigos fijos reproducibles documentados en su README (`220999999` habilitado, `221000000` inactivo, `221004999` no-estudiante).
 
 Cuenta seed de plataforma (`pnpm run seed:platform-users`): `admin@themis.dev` / `autoridad@themis.dev` / `auditor@themis.dev` / `superusuario@themis.dev`, todas con password `123123`. `SUPERUSUARIO` es el único rol sin ruta de auto-creación — las otras tres cuentas se crean desde `POST /auth/users` (guardado con `RolesGuard`, solo `SUPERUSUARIO`), ver `src/modules/auth/README.md`.
 
 ## Endpoints de andamiaje temporal (borrar cuando empiecen los módulos reales)
 
-`GET /health`, `POST|GET /demo/pings`, `GET /demo/forecast`, `GET /demo/chain`, `POST /demo/chain/ping`. `mock-sso/login` y `auth/*` **no** son andamiaje — son HU reales.
+`GET /health`, `POST|GET /demo/pings`, `GET /demo/forecast`, `GET /demo/chain`, `POST /demo/chain/ping`. `mock-sso/login`, `auth/*`, `elections/*` y `registration/*` (registro CU-05, ver su README) **no** son andamiaje — son CU reales, con tests.
 
 ## Puertos y variables clave
 
@@ -68,7 +68,7 @@ Cuenta seed de plataforma (`pnpm run seed:platform-users`): `admin@themis.dev` /
 | 8545 | Hardhat node local |
 | 5432 (o el que esté libre) | Postgres (docker-compose `db`, solo dev local; producción usa Neon con `DATABASE_URL` pooled + `DIRECT_URL` unpooled) |
 
-`AI_SERVICE_TOKEN` (aquí) debe ser el mismo valor que `SERVICE_TOKEN` en `themis-ai/.env`. `JWT_SECRET` y `SSO_MOCK_SECRET` son locales a este repo, sin necesidad de coincidir con nada externo.
+`AI_SERVICE_TOKEN` (aquí) debe ser el mismo valor que `SERVICE_TOKEN` en `themis-ai/.env`. `JWT_SECRET` y `SSO_MOCK_SECRET` son locales a este repo, sin necesidad de coincidir con nada externo. `REGISTRATION_SIGNING_PRIVATE_KEY_JWK`/`REGISTRATION_SIGNING_PUBLIC_KEY_JWK` (firma ciega de CU-05) se generan con `pnpm registration:generate-signing-key` — ver `src/modules/registration/README.md`.
 
 ## Scripts útiles
 

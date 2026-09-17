@@ -27,6 +27,10 @@ export interface AppConfig {
     secret: string;
     tokenTtlSeconds: number;
   };
+  registrationSigning: {
+    privateKeyJwk: string;
+    publicKeyJwk: string;
+  };
 }
 
 export function buildConfig(env: Env): AppConfig {
@@ -58,6 +62,10 @@ export function buildConfig(env: Env): AppConfig {
     ssoMock: {
       secret: env.SSO_MOCK_SECRET,
       tokenTtlSeconds: env.SSO_MOCK_TOKEN_TTL_SECONDS,
+    },
+    registrationSigning: {
+      privateKeyJwk: env.REGISTRATION_SIGNING_PRIVATE_KEY_JWK,
+      publicKeyJwk: env.REGISTRATION_SIGNING_PUBLIC_KEY_JWK,
     },
   };
 }

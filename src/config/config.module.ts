@@ -38,6 +38,12 @@ import type { AppConfig } from './configuration';
           SSO_MOCK_TOKEN_TTL_SECONDS: configService.get(
             'SSO_MOCK_TOKEN_TTL_SECONDS',
           ),
+          REGISTRATION_SIGNING_PRIVATE_KEY_JWK: configService.get(
+            'REGISTRATION_SIGNING_PRIVATE_KEY_JWK',
+          ),
+          REGISTRATION_SIGNING_PUBLIC_KEY_JWK: configService.get(
+            'REGISTRATION_SIGNING_PUBLIC_KEY_JWK',
+          ),
         };
 
         return buildConfig(env as Env);

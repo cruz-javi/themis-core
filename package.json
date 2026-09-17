@@ -24,9 +24,11 @@
     "seed:platform-users": "ts-node prisma/seed-platform-users.ts",
     "chain:node": "hardhat node",
     "chain:compile": "hardhat compile",
-    "chain:deploy:local": "hardhat run scripts/deploy.ts --network localhost"
+    "chain:deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "registration:generate-signing-key": "ts-node scripts/generate-registration-signing-key.ts"
   },
   "dependencies": {
+    "@cloudflare/blindrsa-ts": "^0.4.6",
     "@nestjs/common": "12.0.1",
     "@nestjs/config": "12.0.0",
     "@nestjs/core": "12.0.1",

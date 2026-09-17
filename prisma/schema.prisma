@@ -91,6 +91,8 @@ model Election {
   updatedBy                     String              @map("updated_by")
   opciones                      Option[]
   authorities                   Authority[]
+  registrationRequests          RegistrationRequest[]
+  presentedCredentials          PresentedCredential[]
 
   @@map("elections")
 }
@@ -122,6 +124,60 @@ model Authority {
   @@unique([electionId, platformUserId])
   @@index([electionId])
   @@map("authorities")
+}
+
+enum RegistrationRequestStatus {
+  PENDING
+  QUEUED
+  BATCHED
+  INSERTED
+  REJECTED
+}
+
+// CU-05: una fila por votante que se registra a una eleccion. No contiene
+// identidad real - scopedTokenHash es HMAC(SSO_MOCK_SECRET, sub + electionId),
+// no reversible hacia el UUID real desde este servicio (regla 2 del CLAUDE.md
+// raiz). batchId/aprobaciones de CU-07 en adelante quedan fuera por ahora,
+// ver docs/modelo-bd-registro.md.
+model RegistrationRequest {
+  id              String                    @id @default(uuid())
+  electionId      String                    @map("election_id")
+  election        Election                  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  scopedTokenHash String                    @map("scoped_token_hash")
+  blindedValue    String                    @map("blinded_value")
+  status          RegistrationRequestStatus @default(PENDING)
+  createdAt       DateTime                  @default(now()) @map("created_at")
+
+  @@unique([electionId, scopedTokenHash])
+  @@index([electionId])
+  @@map("registration_requests")
+}
+
+enum PresentedCredentialStatus {
+  PENDING
+  BATCHED
+  INSERTED
+  REJECTED
+}
+
+// Segundo paso, anonimo, de CU-05: el dispositivo presenta la credencial
+// certificada (commitment real + firma ya descegada) sin ninguna conexion
+// con el registro original (sin scoped_token_hash, sin assertion). La firma
+// RSA valida es la unica prueba de habilitacion que exige este endpoint.
+// Ver src/modules/registration/README.md.
+model PresentedCredential {
+  id              String                    @id @default(uuid())
+  electionId      String                    @map("election_id")
+  election        Election                  @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  commitment      String
+  preparedMessage String                    @map("prepared_message")
+  signature       String
+  status          PresentedCredentialStatus @default(PENDING)
+  presentedAt     DateTime                  @default(now()) @map("presented_at")
+
+  @@unique([electionId, commitment])
+  @@index([electionId])
+  @@map("presented_credentials")
 }
 
 model MockSsoUser {
