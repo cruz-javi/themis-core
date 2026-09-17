@@ -32,4 +32,22 @@ export class PrismaPresentedCredentialRepository implements PresentedCredentialR
     });
     return row ? presentedCredentialToDomain(row) : null;
   }
+
+  async findPendingByElection(electionId: string): Promise<PresentedCredential[]> {
+    const rows = await this.prisma.presentedCredential.findMany({
+      where: { electionId, status: 'PENDING' },
+    });
+    return rows.map(presentedCredentialToDomain);
+  }
+
+  async countPresentedBetween(electionId: string, from: Date, to: Date): Promise<number> {
+    return this.prisma.presentedCredential.count({
+      where: { electionId, presentedAt: { gte: from, lt: to } },
+    });
+  }
+
+  async findByBatch(batchId: string): Promise<PresentedCredential[]> {
+    const rows = await this.prisma.presentedCredential.findMany({ where: { batchId } });
+    return rows.map(presentedCredentialToDomain);
+  }
 }

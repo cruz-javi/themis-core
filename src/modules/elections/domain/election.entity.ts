@@ -42,6 +42,10 @@ export class Election {
     public readonly checkpointIntervalMinutes: number | null = null,
     public readonly rateLimitThresholdPerMinute: number | null = null,
     public readonly checkpointPolicyConfiguradoEn: Date | null = null,
+    public readonly lastCheckpointClosedAt: Date | null = null,
+    public readonly onChainGroupId: string | null = null,
+    public readonly onChainGroupCreatedAt: Date | null = null,
+    public readonly merkleRoot: string | null = null,
   ) {}
 
   get mecanismoCriptografico(): typeof CRYPTO_MECHANISM {

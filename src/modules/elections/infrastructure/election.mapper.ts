@@ -38,6 +38,10 @@ interface ElectionRow {
   checkpointIntervalMinutes: number | null;
   rateLimitThresholdPerMinute: number | null;
   checkpointPolicyConfiguradoEn: Date | null;
+  lastCheckpointClosedAt: Date | null;
+  onChainGroupId: string | null;
+  onChainGroupCreatedAt: Date | null;
+  merkleRoot: string | null;
 }
 
 export function optionToDomain(row: OptionRow): Option {
@@ -68,5 +72,9 @@ export function electionToDomain(row: ElectionRow): Election {
     row.checkpointIntervalMinutes,
     row.rateLimitThresholdPerMinute,
     row.checkpointPolicyConfiguradoEn,
+    row.lastCheckpointClosedAt,
+    row.onChainGroupId,
+    row.onChainGroupCreatedAt,
+    row.merkleRoot,
   );
 }

@@ -32,5 +32,6 @@ import { MockSsoModule } from '../mock-sso/mock-sso.module';
       useClass: PrismaPresentedCredentialRepository,
     },
   ],
+  exports: [PRESENTED_CREDENTIAL_REPOSITORY],
 })
 export class RegistrationModule {}

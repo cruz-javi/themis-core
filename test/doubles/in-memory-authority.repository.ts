@@ -75,4 +75,10 @@ export class InMemoryAuthorityRepository implements AuthorityRepository {
   async findById(authorityId: string): Promise<Authority | null> {
     return this.authorities.get(authorityId) ?? null;
   }
+
+  async findByPlatformUser(platformUserId: string): Promise<Authority[]> {
+    return [...this.authorities.values()].filter(
+      (authority) => authority.platformUserId === platformUserId,
+    );
+  }
 }

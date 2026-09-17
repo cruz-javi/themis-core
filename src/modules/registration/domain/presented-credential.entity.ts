@@ -9,5 +9,6 @@ export class PresentedCredential {
     public readonly signature: string,
     public readonly status: PresentedCredentialStatus,
     public readonly presentedAt: Date,
+    public readonly batchId: string | null = null,
   ) {}
 }

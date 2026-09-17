@@ -93,4 +93,32 @@ export class PrismaElectionRepository implements ElectionRepository {
 
     return rows.map(electionToDomain);
   }
+
+  async tryClaimCheckpoint(electionId: string, dueAtExpected: Date): Promise<boolean> {
+    const result = await this.prisma.election.updateMany({
+      where: {
+        id: electionId,
+        OR: [
+          { lastCheckpointClosedAt: null },
+          { lastCheckpointClosedAt: { lte: dueAtExpected } },
+        ],
+      },
+      data: { lastCheckpointClosedAt: new Date() },
+    });
+    return result.count === 1;
+  }
+
+  async setOnChainGroup(electionId: string, onChainGroupId: string): Promise<void> {
+    await this.prisma.election.update({
+      where: { id: electionId },
+      data: { onChainGroupId, onChainGroupCreatedAt: new Date() },
+    });
+  }
+
+  async setMerkleRoot(electionId: string, merkleRoot: string): Promise<void> {
+    await this.prisma.election.update({
+      where: { id: electionId },
+      data: { merkleRoot },
+    });
+  }
 }

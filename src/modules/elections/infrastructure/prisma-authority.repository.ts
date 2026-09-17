@@ -50,6 +50,14 @@ export class PrismaAuthorityRepository implements AuthorityRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findByPlatformUser(platformUserId: string): Promise<Authority[]> {
+    const rows = await this.prisma.authority.findMany({
+      where: { platformUserId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map((row) => this.toDomain(row));
+  }
+
   private toDomain(row: {
     id: string;
     electionId: string;

@@ -11,6 +11,7 @@ interface PresentedCredentialRow {
   signature: string;
   status: string;
   presentedAt: Date;
+  batchId?: string | null;
 }
 
 export function presentedCredentialToDomain(row: PresentedCredentialRow): PresentedCredential {
@@ -22,5 +23,6 @@ export function presentedCredentialToDomain(row: PresentedCredentialRow): Presen
     row.signature,
     row.status as PresentedCredentialStatus,
     row.presentedAt,
+    row.batchId ?? null,
   );
 }

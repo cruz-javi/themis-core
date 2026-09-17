@@ -89,10 +89,16 @@ model Election {
   createdBy                     String              @map("created_by")
   updatedAt                     DateTime            @updatedAt @map("updated_at")
   updatedBy                     String              @map("updated_by")
+  lastCheckpointClosedAt        DateTime?           @map("last_checkpoint_closed_at")
+  onChainGroupId                String?             @map("on_chain_group_id")
+  onChainGroupCreatedAt         DateTime?           @map("on_chain_group_created_at")
+  merkleRoot                    String?             @map("merkle_root")
   opciones                      Option[]
   authorities                   Authority[]
   registrationRequests          RegistrationRequest[]
   presentedCredentials          PresentedCredential[]
+  registrationBatches           RegistrationBatch[]
+  rateAlerts                    RateAlert[]
 
   @@map("elections")
 }
@@ -120,6 +126,7 @@ model Authority {
   createdBy      String       @map("created_by")
   updatedAt      DateTime     @updatedAt @map("updated_at")
   updatedBy      String       @map("updated_by")
+  batchApprovals BatchApproval[]
 
   @@unique([electionId, platformUserId])
   @@index([electionId])
@@ -174,10 +181,89 @@ model PresentedCredential {
   signature       String
   status          PresentedCredentialStatus @default(PENDING)
   presentedAt     DateTime                  @default(now()) @map("presented_at")
+  batchId         String?                   @map("batch_id")
+  batch           RegistrationBatch?        @relation(fields: [batchId], references: [id])
 
   @@unique([electionId, commitment])
   @@index([electionId])
+  @@index([electionId, status])
   @@map("presented_credentials")
+}
+
+enum RegistrationBatchStatus {
+  PENDING_APPROVAL
+  APPROVED
+  INSERTED
+  INSERTION_FAILED
+}
+
+// CU-07/CU-08/CU-09: un lote cerrado automaticamente por el cron de checkpoint
+// (ver src/modules/checkpoints/), que agrupa PresentedCredential.commitment
+// pendientes en el momento del cierre. approvalsRequired congela
+// MULTISIG_THRESHOLD al cerrar (no se relee al aprobar) para no cambiar el
+// umbral de un lote ya en curso si algun dia se vuelve configurable.
+model RegistrationBatch {
+  id                String                   @id @default(uuid())
+  electionId        String                   @map("election_id")
+  election          Election                 @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  status            RegistrationBatchStatus  @default(PENDING_APPROVAL)
+  credentialCount   Int                      @map("credential_count")
+  approvalsRequired Int                      @map("approvals_required")
+  merkleRootBefore  String?                  @map("merkle_root_before")
+  merkleRootAfter   String?                  @map("merkle_root_after")
+  onChainTxHash     String?                  @map("on_chain_tx_hash")
+  onChainGroupId    String?                  @map("on_chain_group_id")
+  closedAt          DateTime                 @default(now()) @map("closed_at")
+  approvedAt        DateTime?                @map("approved_at")
+  insertedAt        DateTime?                @map("inserted_at")
+  failureReason     String?                  @map("failure_reason")
+  credentials       PresentedCredential[]
+  approvals         BatchApproval[]
+
+  @@index([electionId, status])
+  @@map("registration_batches")
+}
+
+// CU-08: una fila = una firma/aprobacion de una autoridad sobre un lote.
+// El multisig 3-de-5 se implementa contando filas (ver approvalsRequired en
+// RegistrationBatch), no con una columna "aprobado". authorityId referencia
+// el asiento (Authority.id), no platformUserId directamente, para que "la
+// misma autoridad no aprueba dos veces" siga siendo correcto aunque
+// ReplaceAuthorityUseCase cambie la cuenta de un asiento a mitad de ciclo.
+model BatchApproval {
+  id             String            @id @default(uuid())
+  batchId        String            @map("batch_id")
+  batch          RegistrationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  authorityId    String            @map("authority_id")
+  authority      Authority         @relation(fields: [authorityId], references: [id])
+  platformUserId String            @map("platform_user_id")
+  approvedAt     DateTime          @default(now()) @map("approved_at")
+
+  @@unique([batchId, authorityId])
+  @@index([batchId])
+  @@map("batch_approvals")
+}
+
+enum RateAlertSeverity {
+  WARNING
+}
+
+// CU-06: historial de "esto se registro mas rapido de lo normal, revisenlo".
+// Puramente informativo -- no bloquea SubmitRegistrationRequestUseCase ni
+// PresentCredentialUseCase.
+model RateAlert {
+  id                 String            @id @default(uuid())
+  electionId         String            @map("election_id")
+  election           Election          @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  windowStart        DateTime          @map("window_start")
+  windowEnd          DateTime          @map("window_end")
+  registrationCount  Int               @map("registration_count")
+  thresholdPerMinute Int               @map("threshold_per_minute")
+  severity           RateAlertSeverity @default(WARNING)
+  createdAt          DateTime          @default(now()) @map("created_at")
+
+  @@index([electionId, createdAt])
+  @@map("rate_alerts")
 }
 
 model MockSsoUser {

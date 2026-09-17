@@ -121,10 +121,41 @@ export class InMemoryElectionRepository
     return updated;
   }
 
+  async tryClaimCheckpoint(electionId: string, dueAtExpected: Date): Promise<boolean> {
+    const existing = this.getOrThrow(electionId);
+    if (
+      existing.lastCheckpointClosedAt !== null &&
+      existing.lastCheckpointClosedAt.getTime() > dueAtExpected.getTime()
+    ) {
+      return false;
+    }
+    this.elections.set(electionId, this.clone(existing, { lastCheckpointClosedAt: new Date() }));
+    return true;
+  }
+
+  async setOnChainGroup(electionId: string, onChainGroupId: string): Promise<void> {
+    const existing = this.getOrThrow(electionId);
+    this.elections.set(
+      electionId,
+      this.clone(existing, { onChainGroupId, onChainGroupCreatedAt: new Date() }),
+    );
+  }
+
+  async setMerkleRoot(electionId: string, merkleRoot: string): Promise<void> {
+    const existing = this.getOrThrow(electionId);
+    this.elections.set(electionId, this.clone(existing, { merkleRoot }));
+  }
+
   /** Solo para tests: fuerza un estado que ninguna HU actual puede producir todavía. */
   forceStatus(id: string, estado: ElectionStatus): void {
     const existing = this.getOrThrow(id);
     this.elections.set(id, this.clone(existing, { estado }));
+  }
+
+  /** Solo para tests: setea directamente lastCheckpointClosedAt sin pasar por el CAS. */
+  forceLastCheckpointClosedAt(id: string, value: Date | null): void {
+    const existing = this.getOrThrow(id);
+    this.elections.set(id, this.clone(existing, { lastCheckpointClosedAt: value }));
   }
 
   private clone(existing: Election, overrides: Partial<Record<string, unknown>>): Election {
@@ -152,6 +183,10 @@ export class InMemoryElectionRepository
       (merged.checkpointIntervalMinutes as number | null) ?? null,
       (merged.rateLimitThresholdPerMinute as number | null) ?? null,
       (merged.checkpointPolicyConfiguradoEn as Date | null) ?? null,
+      (merged.lastCheckpointClosedAt as Date | null) ?? existing.lastCheckpointClosedAt,
+      (merged.onChainGroupId as string | null) ?? existing.onChainGroupId,
+      (merged.onChainGroupCreatedAt as Date | null) ?? existing.onChainGroupCreatedAt,
+      (merged.merkleRoot as string | null) ?? existing.merkleRoot,
     );
   }
 
