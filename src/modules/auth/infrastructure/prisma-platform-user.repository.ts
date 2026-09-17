@@ -29,7 +29,11 @@ export class PrismaPlatformUserRepository implements PlatformUserRepository {
   }
 
   async findAllActive(params: FindAllActiveParams): Promise<FindAllActiveResult> {
-    const where = { isActive: true };
+    const where = {
+      isActive: true,
+      email: params.email ? { contains: params.email, mode: 'insensitive' as const } : undefined,
+      role: params.role,
+    };
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.platformUser.findMany({
         where,

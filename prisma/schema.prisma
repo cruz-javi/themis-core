@@ -55,8 +55,73 @@ model PlatformUser {
   role           PlatformRole
   isActive       Boolean      @default(true) @map("is_active")
   createdAt      DateTime     @default(now()) @map("created_at")
+  authorities    Authority[]
 
   @@map("platform_users")
+}
+
+enum ElectionStatus {
+  BORRADOR
+  REGISTRO_ABIERTO
+  VOTACION_ABIERTA
+  CERRADA
+}
+
+model Election {
+  id                            String              @id @default(uuid())
+  nombre                        String
+  descripcion                   String?
+  registroInicio                DateTime            @map("registro_inicio")
+  registroFin                   DateTime            @map("registro_fin")
+  votacionInicio                DateTime            @map("votacion_inicio")
+  votacionFin                   DateTime            @map("votacion_fin")
+  estado                        ElectionStatus      @default(BORRADOR)
+  profundidadArbol              Int?                @map("profundidad_arbol")
+  elegibilidadFacultad          FacultadSso?        @map("elegibilidad_facultad")
+  elegibilidadCarreras          CarreraSso[]        @default([]) @map("elegibilidad_carreras")
+  elegibilidadTipoUsuario       TipoUsuarioSso?     @map("elegibilidad_tipo_usuario")
+  elegibilidadEstadoAcademico   EstadoAcademicoSso? @map("elegibilidad_estado_academico")
+  padronConfiguradoEn           DateTime?           @map("padron_configurado_en")
+  checkpointIntervalMinutes     Int?                @map("checkpoint_interval_minutes")
+  rateLimitThresholdPerMinute   Int?                @map("rate_limit_threshold_per_minute")
+  checkpointPolicyConfiguradoEn DateTime?           @map("checkpoint_policy_configurado_en")
+  createdAt                     DateTime            @default(now()) @map("created_at")
+  createdBy                     String              @map("created_by")
+  updatedAt                     DateTime            @updatedAt @map("updated_at")
+  updatedBy                     String              @map("updated_by")
+  opciones                      Option[]
+  authorities                   Authority[]
+
+  @@map("elections")
+}
+
+model Option {
+  id          String   @id @default(uuid())
+  electionId  String   @map("election_id")
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  nombre      String
+  descripcion String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([electionId])
+  @@map("options")
+}
+
+model Authority {
+  id             String       @id @default(uuid())
+  electionId     String       @map("election_id")
+  election       Election     @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  platformUserId String       @map("platform_user_id")
+  platformUser   PlatformUser @relation(fields: [platformUserId], references: [id])
+  rolDescriptivo String       @map("rol_descriptivo")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  createdBy      String       @map("created_by")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  updatedBy      String       @map("updated_by")
+
+  @@unique([electionId, platformUserId])
+  @@index([electionId])
+  @@map("authorities")
 }
 
 model MockSsoUser {

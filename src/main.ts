@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { APP_CONFIG } from './config/configuration';
 import type { AppConfig } from './config/configuration';
+import { DomainErrorFilter } from './shared/errors/domain-error.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -16,6 +17,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true }),
   );
+  app.useGlobalFilters(new DomainErrorFilter());
   app.enableCors({ origin: config.corsOrigins, credentials: true });
   app.enableShutdownHooks();
 

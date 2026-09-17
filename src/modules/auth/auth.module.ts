@@ -25,5 +25,6 @@ import { AuthSharedModule } from '../../shared/auth/auth-shared.module';
       useClass: PrismaPlatformUserRepository,
     },
   ],
+  exports: [PLATFORM_USER_REPOSITORY],
 })
 export class AuthModule {}

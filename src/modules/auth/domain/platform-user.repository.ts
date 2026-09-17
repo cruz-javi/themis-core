@@ -15,6 +15,8 @@ export interface UpdatePlatformUserInput {
 export interface FindAllActiveParams {
   skip: number;
   take: number;
+  email?: string;
+  role?: PlatformRole;
 }
 
 export interface FindAllActiveResult {

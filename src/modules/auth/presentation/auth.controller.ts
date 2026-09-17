@@ -125,15 +125,16 @@ export class AuthController {
 
   @Get('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPERUSUARIO')
+  @Roles('SUPERUSUARIO', 'ADMIN')
   @ApiCookieAuth()
   @ApiOperation({
     summary:
-      'Lista paginada de cuentas de plataforma activas (ADMIN/AUTORIDAD_REGISTRO/AUDITOR/SUPERUSUARIO). Solo SUPERUSUARIO.',
+      'Lista paginada de cuentas de plataforma activas, con filtros opcionales email/role. ' +
+      'SUPERUSUARIO (gestion de cuentas) o ADMIN (buscar cuentas AUTORIDAD_REGISTRO para designar, HU-03).',
   })
   @ApiResponse({ status: 200, type: ListUsersResponseDto })
   @ApiResponse({ status: 401, description: 'Sin sesion o sesion expirada' })
-  @ApiResponse({ status: 403, description: 'El solicitante no es SUPERUSUARIO' })
+  @ApiResponse({ status: 403, description: 'El solicitante no es SUPERUSUARIO ni ADMIN' })
   async listUserAccounts(
     @Query() query: ListUsersQueryDto,
   ): Promise<ListUsersResponseDto> {
