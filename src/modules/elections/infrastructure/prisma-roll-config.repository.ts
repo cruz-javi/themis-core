@@ -8,10 +8,14 @@ import { electionToDomain } from './election.mapper';
 export class PrismaRollConfigRepository implements RollConfigRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async configure(electionId: string, input: ConfigureRollInput): Promise<Election> {
+  async configure(
+    electionId: string,
+    input: ConfigureRollInput,
+    updatedBy: string,
+  ): Promise<Election> {
     const row = await this.prisma.election.update({
       where: { id: electionId },
-      data: { ...input, padronConfiguradoEn: new Date() },
+      data: { ...input, padronConfiguradoEn: new Date(), updatedBy },
       include: { opciones: true },
     });
 

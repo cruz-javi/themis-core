@@ -18,7 +18,11 @@ export class ConfigureElectionRollUseCase {
     private readonly rollConfigRepository: RollConfigRepository,
   ) {}
 
-  async execute(electionId: string, input: ConfigureRollInput): Promise<Election> {
+  async execute(
+    electionId: string,
+    input: ConfigureRollInput,
+    actorId: string,
+  ): Promise<Election> {
     const election = await this.electionRepository.findById(electionId);
     if (!election) {
       throw new ElectionNotFoundError();
@@ -30,6 +34,6 @@ export class ConfigureElectionRollUseCase {
     assertTreeDepthInRange(input.profundidadArbol);
     assertEligibilityCatalogValues(input);
 
-    return this.rollConfigRepository.configure(electionId, input);
+    return this.rollConfigRepository.configure(electionId, input, actorId);
   }
 }

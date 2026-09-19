@@ -142,8 +142,9 @@ export class ElectionsController {
   async configureRoll(
     @Param('id') id: string,
     @Body() body: ConfigureRollDto,
+    @CurrentUser() user: RequestUser,
   ): Promise<RollConfigResponseDto> {
-    const election = await this.configureElectionRoll.execute(id, body);
+    const election = await this.configureElectionRoll.execute(id, body, user.sub);
     return RollConfigResponseDto.fromDomain(election);
   }
 
@@ -183,11 +184,12 @@ export class ElectionsController {
   @ApiResponse({ status: 200, type: AuthorityResponseDto })
   @ApiResponse({ status: 409, description: 'AUTHORITY_ELECTION_CLOSED' })
   async replace(
+    @Param('id') id: string,
     @Param('authorityId') authorityId: string,
     @Body() body: ReplaceAuthorityDto,
     @CurrentUser() user: RequestUser,
   ): Promise<AuthorityResponseDto> {
-    const authority = await this.replaceAuthority.execute(authorityId, body, user.sub);
+    const authority = await this.replaceAuthority.execute(id, authorityId, body, user.sub);
     return AuthorityResponseDto.fromDomain(authority);
   }
 
@@ -198,8 +200,9 @@ export class ElectionsController {
   async configureCheckpoints(
     @Param('id') id: string,
     @Body() body: ConfigureCheckpointPolicyDto,
+    @CurrentUser() user: RequestUser,
   ): Promise<CheckpointPolicyResponseDto> {
-    await this.configureCheckpointPolicy.execute(id, body);
+    await this.configureCheckpointPolicy.execute(id, body, user.sub);
     const policy = await this.getEffectivePolicy.execute(id);
     return CheckpointPolicyResponseDto.fromEffectivePolicy(policy);
   }

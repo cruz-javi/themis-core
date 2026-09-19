@@ -307,6 +307,136 @@ describe('elections (e2e)', () => {
         .set('Cookie', adminCookie);
       expect(listAfter.body).toHaveLength(5);
     });
+
+    it('409 al reemplazar con una cuenta ya designada en la misma elección', async () => {
+      const list = await request(app.getHttpServer())
+        .get(`/api/v1/elections/${electionId}/authorities`)
+        .set('Cookie', adminCookie);
+      const [first, second] = list.body;
+      const secondAccount = await prisma.platformUser.findUnique({
+        where: { email: second.platformUserEmail },
+      });
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/v1/elections/${electionId}/authorities/${first.id}`)
+        .set('Cookie', adminCookie)
+        .send({ platformUserId: secondAccount!.id });
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe('AUTHORITY_ALREADY_DESIGNATED');
+    });
+
+    it('404 al reemplazar una autoridad usando la ruta de otra elección (AC-05)', async () => {
+      const other = await request(app.getHttpServer())
+        .post('/api/v1/elections')
+        .set('Cookie', adminCookie)
+        .send(baseElectionPayload({ nombre: `Otra eleccion ${suffix}` }));
+      const list = await request(app.getHttpServer())
+        .get(`/api/v1/elections/${electionId}/authorities`)
+        .set('Cookie', adminCookie);
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/v1/elections/${other.body.id}/authorities/${list.body[0].id}`)
+        .set('Cookie', adminCookie)
+        .send({ rolDescriptivo: 'Intruso' });
+
+      expect(response.status).toBe(404);
+      expect(response.body.code).toBe('AUTHORITY_NOT_FOUND');
+    });
+
+    it('409 al designar 5 cuentas nuevas si la elección ya tiene autoridades (AC-02)', async () => {
+      const extraEmails: string[] = [];
+      const extraIds: string[] = [];
+      for (let i = 0; i < 5; i += 1) {
+        const email = `e2e-elections-extra-${suffix}-${i}@themis.dev`;
+        extraEmails.push(email);
+        const account = await prisma.platformUser.create({
+          data: {
+            email,
+            passwordHash: await hashPassword('clave-e2e'),
+            nombreCompleto: `Extra E2E ${i}`,
+            role: 'AUTORIDAD_REGISTRO',
+          },
+        });
+        extraIds.push(account.id);
+      }
+
+      try {
+        const response = await request(app.getHttpServer())
+          .post(`/api/v1/elections/${electionId}/authorities`)
+          .set('Cookie', adminCookie)
+          .send({
+            autoridades: extraIds.map((id) => ({ platformUserId: id, rolDescriptivo: 'Rol' })),
+          });
+
+        expect(response.status).toBe(409);
+        expect(response.body.code).toBe('AUTHORITY_ALREADY_DESIGNATED');
+
+        const list = await request(app.getHttpServer())
+          .get(`/api/v1/elections/${electionId}/authorities`)
+          .set('Cookie', adminCookie);
+        expect(list.body).toHaveLength(5);
+      } finally {
+        await prisma.platformUser.deleteMany({ where: { email: { in: extraEmails } } });
+      }
+    });
+  });
+
+  describe('Auditoria de padron y checkpoints (HU-02/HU-04 AC-07)', () => {
+    it('registra updatedBy del Admin que modifica la configuracion', async () => {
+      const admin2Email = `e2e-elections-admin2-${suffix}@themis.dev`;
+      const admin2 = await prisma.platformUser.create({
+        data: {
+          email: admin2Email,
+          passwordHash: await hashPassword('clave-e2e'),
+          nombreCompleto: 'Admin2 E2E Elections',
+          role: 'ADMIN',
+        },
+      });
+
+      try {
+        const created = await request(app.getHttpServer())
+          .post('/api/v1/elections')
+          .set('Cookie', adminCookie)
+          .send(baseElectionPayload({ nombre: `Auditoria ${suffix}` }));
+        const auditElectionId = created.body.id as string;
+        const login = await request(app.getHttpServer())
+          .post('/api/v1/auth/login')
+          .send({ email: admin2Email, password: 'clave-e2e' });
+        const admin2Cookie = extractCookie(
+          login.headers['set-cookie'] as unknown as string[] | undefined,
+        );
+
+        await request(app.getHttpServer())
+          .put(`/api/v1/elections/${auditElectionId}/roll-config`)
+          .set('Cookie', admin2Cookie)
+          .send({
+            profundidadArbol: 12,
+            elegibilidadFacultad: 'FICCT',
+            elegibilidadCarreras: [],
+            elegibilidadTipoUsuario: 'ESTUDIANTE',
+            elegibilidadEstadoAcademico: 'ACTIVO',
+          })
+          .expect(200);
+        const afterRoll = await request(app.getHttpServer())
+          .get(`/api/v1/elections/${auditElectionId}`)
+          .set('Cookie', adminCookie);
+        expect(afterRoll.body.updatedBy).toBe(admin2.id);
+
+        const admin1 = await prisma.platformUser.findUnique({ where: { email: adminEmail } });
+        await request(app.getHttpServer())
+          .put(`/api/v1/elections/${auditElectionId}/checkpoint-policy`)
+          .set('Cookie', adminCookie)
+          .send({ checkpointIntervalMinutes: 30, rateLimitThresholdPerMinute: 100 })
+          .expect(200);
+        const afterPolicy = await request(app.getHttpServer())
+          .get(`/api/v1/elections/${auditElectionId}`)
+          .set('Cookie', adminCookie);
+        expect(afterPolicy.body.updatedBy).toBe(admin1!.id);
+      } finally {
+        await prisma.platformUser.deleteMany({ where: { email: admin2Email } });
+      }
+    });
   });
 
   describe('Busqueda de cuentas por email para designacion (addendum UT-CORE-HU03-07)', () => {

@@ -46,18 +46,19 @@ describe('ConfigureElectionRollUseCase', () => {
   it('configura el padrón calculando la capacidad máxima (AC-01, AC-02)', async () => {
     const election = await createElection();
 
-    const updated = await useCase.execute(election.id, validRollInput());
+    const updated = await useCase.execute(election.id, validRollInput(), 'admin-2');
 
     expect(updated.profundidadArbol).toBe(13);
     expect(updated.capacidadMaxima).toBe(2n ** 13n);
     expect(updated.padronConfigurado).toBe(true);
+    expect(updated.updatedBy).toBe('admin-2');
   });
 
   it('rechaza una profundidad por debajo de MIN_TREE_DEPTH = 4', async () => {
     const election = await createElection();
 
     await expect(
-      useCase.execute(election.id, validRollInput({ profundidadArbol: 3 })),
+      useCase.execute(election.id, validRollInput({ profundidadArbol: 3 }), 'admin-2'),
     ).rejects.toBeInstanceOf(ElectionTreeDepthOutOfRangeError);
   });
 
@@ -65,7 +66,7 @@ describe('ConfigureElectionRollUseCase', () => {
     const election = await createElection();
 
     await expect(
-      useCase.execute(election.id, validRollInput({ profundidadArbol: 21 })),
+      useCase.execute(election.id, validRollInput({ profundidadArbol: 21 }), 'admin-2'),
     ).rejects.toBeInstanceOf(ElectionTreeDepthOutOfRangeError);
   });
 
@@ -73,7 +74,7 @@ describe('ConfigureElectionRollUseCase', () => {
     const election = await createElection();
     const input = { ...validRollInput(), elegibilidadFacultad: 'DERECHO' as never };
 
-    await expect(useCase.execute(election.id, input)).rejects.toBeInstanceOf(
+    await expect(useCase.execute(election.id, input, 'admin-2')).rejects.toBeInstanceOf(
       ElectionEligibilityInvalidCatalogValueError,
     );
   });
@@ -82,7 +83,7 @@ describe('ConfigureElectionRollUseCase', () => {
     const election = await createElection();
     repository.forceStatus(election.id, 'REGISTRO_ABIERTO');
 
-    await expect(useCase.execute(election.id, validRollInput())).rejects.toBeInstanceOf(
+    await expect(useCase.execute(election.id, validRollInput(), 'admin-2')).rejects.toBeInstanceOf(
       ElectionRollLockedError,
     );
   });

@@ -9,6 +9,7 @@ export interface CheckpointPolicyRepository {
   configure(
     electionId: string,
     input: ConfigureCheckpointPolicyInput,
+    updatedBy: string,
   ): Promise<Election>;
 }
 

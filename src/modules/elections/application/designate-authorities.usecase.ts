@@ -46,6 +46,11 @@ export class DesignateAuthoritiesUseCase {
 
     assertExactQuota(inputs);
 
+    const existing = await this.authorityRepository.findByElection(electionId);
+    if (existing.length > 0) {
+      throw new AuthorityAlreadyDesignatedError();
+    }
+
     for (const input of inputs) {
       const account = await this.platformUserRepository.findById(input.platformUserId);
       if (!account) {

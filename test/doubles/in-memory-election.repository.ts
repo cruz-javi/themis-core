@@ -96,6 +96,7 @@ export class InMemoryElectionRepository
   async configure(
     electionId: string,
     input: ConfigureRollInput | ConfigureCheckpointPolicyInput,
+    updatedBy: string,
   ): Promise<Election> {
     const existing = this.getOrThrow(electionId);
     let updated: Election;
@@ -108,12 +109,14 @@ export class InMemoryElectionRepository
         elegibilidadTipoUsuario: input.elegibilidadTipoUsuario,
         elegibilidadEstadoAcademico: input.elegibilidadEstadoAcademico,
         padronConfiguradoEn: new Date(),
+        updatedBy,
       });
     } else {
       updated = this.clone(existing, {
         checkpointIntervalMinutes: input.checkpointIntervalMinutes,
         rateLimitThresholdPerMinute: input.rateLimitThresholdPerMinute,
         checkpointPolicyConfiguradoEn: new Date(),
+        updatedBy,
       });
     }
 

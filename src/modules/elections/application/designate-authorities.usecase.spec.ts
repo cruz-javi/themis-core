@@ -153,6 +153,19 @@ describe('DesignateAuthoritiesUseCase', () => {
     );
   });
 
+  it('rechaza designar si la elección ya tiene autoridades, aunque las cuentas sean nuevas (AC-02)', async () => {
+    const election = await createElection();
+    const accounts = await createAuthorityAccounts(10);
+    const toInputs = (list: typeof accounts) =>
+      list.map((account) => ({ platformUserId: account.id, rolDescriptivo: 'Rol' }));
+    await useCase.execute(election.id, toInputs(accounts.slice(0, 5)), 'admin-1');
+
+    await expect(
+      useCase.execute(election.id, toInputs(accounts.slice(5)), 'admin-1'),
+    ).rejects.toBeInstanceOf(AuthorityAlreadyDesignatedError);
+    expect(await authorityRepository.findByElection(election.id)).toHaveLength(5);
+  });
+
   it('rechaza designar autoridades en una elección CERRADA (AC-06)', async () => {
     const election = await createElection();
     electionRepository.forceStatus(election.id, 'CERRADA');
