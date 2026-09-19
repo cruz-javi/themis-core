@@ -1,5 +1,6 @@
 import { config as loadEnv } from 'dotenv';
 import '@nomicfoundation/hardhat-ethers';
+import '@semaphore-protocol/hardhat';
 import type { HardhatUserConfig } from 'hardhat/config';
 
 loadEnv();

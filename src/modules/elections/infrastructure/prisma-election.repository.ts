@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { Election } from '../domain/election.entity';
+import { Election, ElectionStatus } from '../domain/election.entity';
 import type {
   CreateElectionInput,
   ElectionRepository,
@@ -85,7 +85,7 @@ export class PrismaElectionRepository implements ElectionRepository {
         nombre: filter.nombre
           ? { contains: filter.nombre, mode: 'insensitive' }
           : undefined,
-        estado: filter.estado,
+        estado: filter.estado ?? (filter.estados ? { in: filter.estados } : undefined),
       },
       include: { opciones: true },
       orderBy: { createdAt: 'desc' },
@@ -104,6 +104,18 @@ export class PrismaElectionRepository implements ElectionRepository {
         ],
       },
       data: { lastCheckpointClosedAt: new Date() },
+    });
+    return result.count === 1;
+  }
+
+  async transitionStatus(
+    electionId: string,
+    from: ElectionStatus,
+    to: ElectionStatus,
+  ): Promise<boolean> {
+    const result = await this.prisma.election.updateMany({
+      where: { id: electionId, estado: from },
+      data: { estado: to },
     });
     return result.count === 1;
   }

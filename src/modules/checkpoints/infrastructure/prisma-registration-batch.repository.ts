@@ -76,6 +76,8 @@ export class PrismaRegistrationBatchRepository implements RegistrationBatchRepos
           onChainTxHash: input.onChainTxHash,
           onChainGroupId: input.onChainGroupId,
           insertedAt: new Date(),
+          // Un lote recuperado por reintento no debe conservar el error del intento fallido.
+          failureReason: null,
         },
       });
 

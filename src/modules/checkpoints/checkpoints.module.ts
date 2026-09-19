@@ -13,7 +13,7 @@ import { ListMyAuthorityElectionsUseCase } from './application/list-my-authority
 import { PrismaRegistrationBatchRepository } from './infrastructure/prisma-registration-batch.repository';
 import { PrismaBatchApprovalRepository } from './infrastructure/prisma-batch-approval.repository';
 import { PrismaRateAlertRepository } from './infrastructure/prisma-rate-alert.repository';
-import { StubSemaphoreOnChainService } from './infrastructure/stub-semaphore-onchain.service';
+import { SemaphoreOnChainService } from './infrastructure/semaphore-onchain.service';
 import { CheckpointScheduler } from './infrastructure/checkpoint.scheduler';
 import { REGISTRATION_BATCH_REPOSITORY } from './domain/registration-batch.repository';
 import { BATCH_APPROVAL_REPOSITORY } from './domain/batch-approval.repository';
@@ -22,9 +22,16 @@ import { SEMAPHORE_ONCHAIN_PORT } from './domain/semaphore-onchain.port';
 import { AuthSharedModule } from '../../shared/auth/auth-shared.module';
 import { ElectionsModule } from '../elections/elections.module';
 import { RegistrationModule } from '../registration/registration.module';
+import { BlockchainModule } from '../../shared/blockchain/blockchain.module';
 
 @Module({
-  imports: [AuthSharedModule, ElectionsModule, RegistrationModule, ScheduleModule.forRoot()],
+  imports: [
+    AuthSharedModule,
+    ElectionsModule,
+    RegistrationModule,
+    ScheduleModule.forRoot(),
+    BlockchainModule,
+  ],
   controllers: [CheckpointsController],
   providers: [
     CloseCheckpointUseCase,
@@ -40,9 +47,7 @@ import { RegistrationModule } from '../registration/registration.module';
     { provide: REGISTRATION_BATCH_REPOSITORY, useClass: PrismaRegistrationBatchRepository },
     { provide: BATCH_APPROVAL_REPOSITORY, useClass: PrismaBatchApprovalRepository },
     { provide: RATE_ALERT_REPOSITORY, useClass: PrismaRateAlertRepository },
-    // Stub temporal: reemplazar por la integracion real (shared/blockchain)
-    // cuando ThemisSemaphoreRegistry.sol este desplegado -- ver plan, fase 4/5.
-    { provide: SEMAPHORE_ONCHAIN_PORT, useClass: StubSemaphoreOnChainService },
+    { provide: SEMAPHORE_ONCHAIN_PORT, useClass: SemaphoreOnChainService },
   ],
 })
 export class CheckpointsModule {}

@@ -25,7 +25,7 @@ export class ElectionResponseDto {
   votacionFin!: Date;
 
   @ApiProperty({
-    enum: ['BORRADOR', 'REGISTRO_ABIERTO', 'VOTACION_ABIERTA', 'CERRADA'],
+    enum: ['BORRADOR', 'REGISTRO_ABIERTO', 'REGISTRO_CERRADO', 'VOTACION_ABIERTA', 'CERRADA'],
   })
   estado!: string;
 

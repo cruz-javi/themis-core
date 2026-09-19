@@ -2,12 +2,14 @@
  * Prueba manual end-to-end de TODO lo implementado hasta ahora del diagrama de secuencia
  * de votacion: FASE 1 (registro, CU-05) + el bloque de checkpoint (CU-06 a CU-09).
  *
- * No prueba FASE 2 (emision de voto, CU-10) porque no existe ningun endpoint de voto
- * todavia -- el contrato on-chain sigue siendo scaffolding y la insercion CU-09 usa un
- * stub (ver themis-core/docs/checkpoint-lote-multisig.md).
+ * CU-09 (insercion on-chain) ya es real: los commitments se insertan en un grupo
+ * Semaphore de verdad (ThemisSemaphoreRegistry.sol, wrapper del Semaphore oficial
+ * v4). Sigue faltando FASE 2 (emision de voto, CU-10) -- no existe ningun endpoint de
+ * voto todavia (ver themis-core/docs/checkpoint-lote-multisig.md).
  *
  * Requisitos antes de correr:
- *   - Los 3 procesos de siempre corriendo: pnpm chain:node / chain:deploy:local / start:dev
+ *   - Los 4 procesos: pnpm chain:node / chain:deploy:local / chain:deploy:semaphore:local /
+ *     start:dev (con SEMAPHORE_REGISTRY_ADDRESS ya pegado en .env)
  *   - pnpm run seed:platform-users corrido al menos una vez (admin@themis.dev /
  *     superusuario@themis.dev con password 123123)
  *
@@ -18,10 +20,21 @@
  * cron real de cierre de checkpoint (espera hasta ~70s a que el tick de EVERY_MINUTE lo
  * cierre solo, no lo dispara a mano).
  */
+import { config as loadEnv } from 'dotenv';
 import { webcrypto } from 'node:crypto';
 import { RSABSSA } from '@cloudflare/blindrsa-ts';
 import { PrismaClient } from '@prisma/client';
+import { Identity } from '@semaphore-protocol/identity';
 import { hashPassword } from '../src/modules/mock-sso/infrastructure/hash.util';
+
+loadEnv();
+
+if (!process.env.SEMAPHORE_REGISTRY_ADDRESS) {
+  throw new Error(
+    'SEMAPHORE_REGISTRY_ADDRESS no esta seteado -- corre pnpm chain:deploy:semaphore:local ' +
+      'y pega la direccion en .env antes de correr este script.',
+  );
+}
 
 const BASE_URL = 'http://localhost:3000/api/v1';
 const RUN_ID = Date.now();
@@ -219,19 +232,47 @@ async function main() {
   );
   console.log('5 autoridades designadas');
 
-  // No existe todavia un endpoint publico para abrir el registro de una eleccion (gap
-  // preexistente, no de esta HU) -- lo forzamos directo en la base, documentado en
-  // themis-core/docs/checkpoint-lote-multisig.md.
-  await prisma.election.update({
-    where: { id: electionId },
-    data: { estado: 'REGISTRO_ABIERTO' },
-  });
-  console.log('Eleccion pasada a REGISTRO_ABIERTO (directo en BD, sin endpoint todavia)\n');
+  // profundidadArbol es obligatorio antes de crear el grupo Semaphore on-chain
+  // (CU-09, capacidad maxima a nivel aplicacion) -- se configura junto al resto
+  // del padron, mientras la eleccion sigue en BORRADOR.
+  await putJson(
+    `/elections/${electionId}/roll-config`,
+    {
+      profundidadArbol: 13,
+      elegibilidadFacultad: 'FICCT',
+      elegibilidadCarreras: [],
+      elegibilidadTipoUsuario: 'ESTUDIANTE',
+      elegibilidadEstadoAcademico: 'ACTIVO',
+    },
+    adminCookie,
+  );
+  console.log('Padron configurado: profundidadArbol=13');
+
+  // El registro se abre solo: registroInicio ya paso y la eleccion tiene padron y las 5
+  // autoridades, asi que el cron de ciclo de vida (cada minuto) la pasa a REGISTRO_ABIERTO.
+  console.log('Esperando a que el cron de ciclo de vida abra el registro (hasta ~70s)...');
+  let estado = 'BORRADOR';
+  for (let attempt = 0; attempt < 14 && estado !== 'REGISTRO_ABIERTO'; attempt += 1) {
+    await sleep(5000);
+    estado = (await getJson(`/elections/${electionId}`, adminCookie)).body.estado as string;
+  }
+  if (estado !== 'REGISTRO_ABIERTO') {
+    throw new Error(`La eleccion no se abrio sola, estado=${estado}`);
+  }
+  console.log('Eleccion abierta automaticamente: REGISTRO_ABIERTO\n');
 
   console.log('=== FASE 1: registro de votantes (CU-05) ===');
   for (let i = 0; i < voterCodes.length; i += 1) {
-    await registerVoter(electionId, voterCodes[i], `commitment-flujo-${RUN_ID}-${i}`);
+    const identity = new Identity();
+    await registerVoter(electionId, voterCodes[i], identity.commitment.toString());
   }
+
+  // Al abrirse, el intervalo del checkpoint empieza a contar (5 min). Se retrocede el ultimo
+  // cierre para que venza en el siguiente tick del cron en vez de esperar 5 minutos.
+  await prisma.election.update({
+    where: { id: electionId },
+    data: { lastCheckpointClosedAt: new Date(Date.now() - 10 * 60_000) },
+  });
 
   console.log('\n=== CHECKPOINT: esperando a que el cron cierre el lote (CU-07, hasta ~70s) ===');
   let batchId: string | null = null;
@@ -262,13 +303,30 @@ async function main() {
     );
   }
 
-  console.log('\n=== CHECKPOINT: resultado final (CU-09, insercion on-chain simulada) ===');
+  console.log('\n=== CHECKPOINT: resultado final (CU-09, insercion on-chain real) ===');
   const detail = await getJson(`/elections/${electionId}/batches/${batchId}`, adminCookie);
   console.log(JSON.stringify(detail.body, null, 2));
 
+  const { onChainTxHash, merkleRootAfter } = detail.body as {
+    onChainTxHash?: string;
+    merkleRootAfter?: string;
+  };
+  const looksLikeRealTxHash = !!onChainTxHash && /^0x[0-9a-f]{64}$/i.test(onChainTxHash);
+  const looksLikeRealRoot = !!merkleRootAfter && /^\d+$/.test(merkleRootAfter);
+  if (!looksLikeRealTxHash || !looksLikeRealRoot) {
+    throw new Error(
+      `El resultado no parece on-chain real (onChainTxHash=${onChainTxHash}, ` +
+        `merkleRootAfter=${merkleRootAfter}) -- revisar SEMAPHORE_ONCHAIN_PORT y ` +
+        'SEMAPHORE_REGISTRY_ADDRESS.',
+    );
+  }
+  console.log(
+    `OK: onChainTxHash y merkleRootAfter tienen forma real (no 0xstub-.../stub-root-...).`,
+  );
+
   console.log('\n=== FASE 2 (emision de voto, CU-10): NO IMPLEMENTADA ===');
   console.log(
-    'No existe ningun endpoint de voto todavia -- el contrato on-chain sigue siendo scaffolding.\n' +
+    'No existe ningun endpoint de voto todavia.\n' +
       'Esta fase del diagrama no se puede probar hasta que se implemente CU-10.',
   );
 

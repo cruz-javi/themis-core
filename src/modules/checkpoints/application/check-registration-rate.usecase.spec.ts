@@ -21,6 +21,10 @@ describe('CheckRegistrationRateUseCase', () => {
     );
   });
 
+  // El conteo usa presentedAt < ahora: sin esperar, las credenciales recien creadas pueden
+  // caer en el mismo milisegundo que la ventana y quedar fuera.
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 5));
+
   async function createOpenElection() {
     const create = new CreateElectionUseCase(electionRepository);
     const election = await create.execute(
@@ -64,6 +68,7 @@ describe('CheckRegistrationRateUseCase', () => {
       });
     }
 
+    await tick();
     await useCase.execute();
 
     const alerts = await alertRepository.findByElection(election.id);
@@ -83,6 +88,7 @@ describe('CheckRegistrationRateUseCase', () => {
       });
     }
 
+    await tick();
     await useCase.execute();
     await useCase.execute();
 

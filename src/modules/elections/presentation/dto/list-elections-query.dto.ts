@@ -5,6 +5,7 @@ import { ElectionStatus } from '../../domain/election.entity';
 const ESTADOS: ElectionStatus[] = [
   'BORRADOR',
   'REGISTRO_ABIERTO',
+  'REGISTRO_CERRADO',
   'VOTACION_ABIERTA',
   'CERRADA',
 ];

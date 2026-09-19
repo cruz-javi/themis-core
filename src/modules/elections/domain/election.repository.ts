@@ -25,6 +25,8 @@ export interface UpdateElectionInput {
 export interface ListElectionsFilter {
   nombre?: string;
   estado?: ElectionStatus;
+  /** Cualquiera de estos estados; si se pasa junto con `estado`, gana `estado`. */
+  estados?: ElectionStatus[];
 }
 
 export interface ElectionRepository {
@@ -40,6 +42,15 @@ export interface ElectionRepository {
    * CloseCheckpointUseCase.
    */
   tryClaimCheckpoint(electionId: string, dueAtExpected: Date): Promise<boolean>;
+  /**
+   * Compare-and-swap del ciclo de vida: solo cambia el estado si la eleccion
+   * sigue en `from`. Devuelve true unicamente a quien gana la carrera.
+   */
+  transitionStatus(
+    electionId: string,
+    from: ElectionStatus,
+    to: ElectionStatus,
+  ): Promise<boolean>;
   setOnChainGroup(electionId: string, onChainGroupId: string): Promise<void>;
   setMerkleRoot(electionId: string, merkleRoot: string): Promise<void>;
 }

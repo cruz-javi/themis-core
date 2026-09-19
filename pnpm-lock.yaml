@@ -38,6 +38,9 @@ importers:
       '@prisma/client':
         specifier: 6.19.3
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      '@semaphore-protocol/contracts':
+        specifier: ^4.14.3
+        version: 4.14.3
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -81,6 +84,12 @@ importers:
       '@nomicfoundation/hardhat-ethers':
         specifier: 3.1.3
         version: 3.1.3(ethers@6.17.0)(hardhat@2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3))(supports-color@8.1.1)
+      '@semaphore-protocol/hardhat':
+        specifier: 4.14.3
+        version: 4.14.3(hardhat@2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3))
+      '@semaphore-protocol/identity':
+        specifier: ^4.14.3
+        version: 4.14.3
       '@types/bcrypt':
         specifier: ^6.0.0
         version: 6.0.0
@@ -102,6 +111,9 @@ importers:
       '@types/supertest':
         specifier: ^7.2.1
         version: 7.2.1
+      '@zk-kit/lean-imt.sol':
+        specifier: 2.0.1
+        version: 2.0.1
       dotenv:
         specifier: 17.4.2
         version: 17.4.2
@@ -111,6 +123,9 @@ importers:
       jest:
         specifier: ^30.5.1
         version: 30.5.1(@types/node@26.5.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))
+      poseidon-solidity:
+        specifier: 0.0.5
+        version: 0.0.5
       prisma:
         specifier: 6.19.3
         version: 6.19.3(typescript@5.9.3)
@@ -1080,6 +1095,17 @@ packages:
   '@scure/bip39@1.3.0':
     resolution: {integrity: sha512-disdg7gHuTDZtY+ZdkmLpPCk7fxZSu3gBiEGuoC1XYxv9cGx3Z6cpTggCgW6odSOOIXCiDjuGejW+aJKCY/pIQ==}
 
+  '@semaphore-protocol/contracts@4.14.3':
+    resolution: {integrity: sha512-N6UdFINfvDbpsIRSGuvOXZbKczDTrJATQQN5ToFI+oAVAO8s9TuBrFxDIsATnGnP8q/Dz/j7ZBEE6ypAU5Zebw==}
+
+  '@semaphore-protocol/hardhat@4.14.3':
+    resolution: {integrity: sha512-0WWSCRCv8TQ0912pmX6d/xWz8j1EraunUJLV3Dkt9jd146C/P5mer77CLFdMUMxQjepB/xZFQu8tYOrgr+VlRw==}
+    peerDependencies:
+      hardhat: ^2.19.4
+
+  '@semaphore-protocol/identity@4.14.3':
+    resolution: {integrity: sha512-YMSNBGMJ2H1GodTO/F7J3Tft/D+NxtCDpw4Q1SjqxKcgP2tKVmxpycCLcfJGISu9pwQ5CcRhy/xYWxlzgekYQA==}
+
   '@sentry/core@5.30.0':
     resolution: {integrity: sha512-TmfrII8w1PQZSZgPpUESqjB+jC6MvZJZdLtE/0hZ+SrnKhW3x5WlYLvTXZpcWePYBku7rl2wn1RZu6uT0qCTeg==}
     engines: {node: '>=6'}
@@ -1376,6 +1402,21 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@zk-kit/baby-jubjub@1.0.3':
+    resolution: {integrity: sha512-Wl+QfV6XGOMk1yU2JTqHXeKWfJVXp83is0+dtqfj9wx4wsAPpb+qzYvwAxW5PBx5/Nu71Bh7jp/5vM+6QgHSwA==}
+
+  '@zk-kit/eddsa-poseidon@1.0.4':
+    resolution: {integrity: sha512-w0HrF5F+Kh+77+VK/p9qzB7wvitiZMAoWnqrmzPUM+MWlaNp0ipmtuO8KTLxnj8ACjt98GAK4voxl7XeWjC4XQ==}
+
+  '@zk-kit/lean-imt.sol@2.0.1':
+    resolution: {integrity: sha512-2dy/wfzch2vy5QtDCFmQwN7E4GZP0xBcucTb2mfZoJP5V69cjPRdy6KcbS0YOcBMH/Lb7BgXLsekRYjh9JNKEw==}
+
+  '@zk-kit/utils@1.2.1':
+    resolution: {integrity: sha512-H2nTsyWdicVOyvqC5AjgU7tsTgmR6PDrruFJNmlmdhKp7RxEia/E1B1swMZjaasYa2QMp4Zc6oB7cWchty7B2Q==}
+
+  '@zk-kit/utils@1.3.0':
+    resolution: {integrity: sha512-Gqsq5KLDf2WPuZSsNc2KZy25XeK5d5UV9hwLaPEM5wq+GD2qCi1ZBFzNs0OptiJ9GRGtP2J/xptrszWri+pRqQ==}
+
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
     engines: {node: '>= 0.6'}
@@ -1507,6 +1548,9 @@ packages:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
 
+  base64-js@1.5.1:
+    resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
+
   baseline-browser-mapping@2.11.23:
     resolution: {integrity: sha512-le521dGVfxM7yRX0EikCoSz+rOK+hHzdDt/E7mG1jOJB/6WAAUuwVroLwaB7ApaUsz5Q0kFlDXLSA9MheUIfRQ==}
     engines: {node: '>=6.0.0'}
@@ -1560,6 +1604,9 @@ packages:
 
   buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
+
+  buffer@6.0.3:
+    resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
 
   busboy@1.6.0:
     resolution: {integrity: sha512-8SFQbg/0hQ9xy3UNTB0YEnsNBbWfhf7RtnzpL7TkBiTBRfrQ9Fxcnz7VJsleJpyp6rVLvXiuORqjlHi5q+PYuA==}
@@ -2126,6 +2173,12 @@ packages:
     resolution: {integrity: sha512-4E71E0rpOaQuJR2A3xDZ+GM1HyWYv1clR58tC8emQNeQe3RH7MAzSbat+V0wG78LQBo6m6bzSG/L4pBuCsgnUQ==}
     engines: {node: '>=0.4.7'}
     hasBin: true
+
+  hardhat-dependency-compiler@1.2.1:
+    resolution: {integrity: sha512-xG5iwbspTtxOEiP5UsPngEYQ1Hg+fjTjliapIjdTQmwGkCPofrsDhQDV2O/dopcYzcR68nTx2X8xTewYHgA2rQ==}
+    engines: {node: '>=14.14.0'}
+    peerDependencies:
+      hardhat: ^2.0.0
 
   hardhat@2.29.1:
     resolution: {integrity: sha512-BVPE15F9+gWH5Eof7aAhprXTi05mNHwn32fwIKMeMFqrkU3Jun1f7NubXsJ0SOeMqu0mchF6KkW7rx1CHinlWw==}
@@ -2859,6 +2912,12 @@ packages:
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
+
+  poseidon-lite@0.3.0:
+    resolution: {integrity: sha512-ilJj4MIve4uBEG7SrtPqUUNkvpJ/pLVbndxa0WvebcQqeIhe+h72JR4g0EvwchUzm9sOQDlOjiDNmRAgxNZl4A==}
+
+  poseidon-solidity@0.0.5:
+    resolution: {integrity: sha512-NzrvSwHzvZgT4hvg2GyGqeR+UOU/eLSEt4wAoXEua+VaR7NTKKwx1X9bPlh1VMBEVEno+IWvkRBbidFGzTeAqQ==}
 
   pretty-format@30.5.1:
     resolution: {integrity: sha512-byhRAPguVKMQIj4kjJwJ5lAskVhfuiSdiYl/aLTWpgkGEmic2jYhJh1yE9ih8Ox44Xg9ccCT11/S6QrzSJuNrg==}
@@ -4549,6 +4608,29 @@ snapshots:
       '@noble/hashes': 1.4.0
       '@scure/base': 1.1.9
 
+  '@semaphore-protocol/contracts@4.14.3':
+    dependencies:
+      '@zk-kit/lean-imt.sol': 2.0.1
+
+  '@semaphore-protocol/hardhat@4.14.3(hardhat@2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3))':
+    dependencies:
+      '@nomicfoundation/hardhat-ethers': 3.1.3(ethers@6.17.0)(hardhat@2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3))(supports-color@8.1.1)
+      '@semaphore-protocol/contracts': 4.14.3
+      ethers: 6.17.0
+      hardhat: 2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3)
+      hardhat-dependency-compiler: 1.2.1(hardhat@2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3))
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@semaphore-protocol/identity@4.14.3':
+    dependencies:
+      '@zk-kit/baby-jubjub': 1.0.3
+      '@zk-kit/eddsa-poseidon': 1.0.4
+      '@zk-kit/utils': 1.3.0
+      poseidon-lite: 0.3.0
+
   '@sentry/core@5.30.0':
     dependencies:
       '@sentry/hub': 5.30.0
@@ -4844,6 +4926,29 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
 
+  '@zk-kit/baby-jubjub@1.0.3':
+    dependencies:
+      '@zk-kit/utils': 1.2.1
+
+  '@zk-kit/eddsa-poseidon@1.0.4':
+    dependencies:
+      '@zk-kit/baby-jubjub': 1.0.3
+      '@zk-kit/utils': 1.2.1
+      buffer: 6.0.3
+      poseidon-lite: 0.3.0
+
+  '@zk-kit/lean-imt.sol@2.0.1':
+    dependencies:
+      poseidon-solidity: 0.0.5
+
+  '@zk-kit/utils@1.2.1':
+    dependencies:
+      buffer: 6.0.3
+
+  '@zk-kit/utils@1.3.0':
+    dependencies:
+      buffer: 6.0.3
+
   accepts@2.0.0:
     dependencies:
       mime-types: 3.0.2
@@ -4982,6 +5087,8 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
+  base64-js@1.5.1: {}
+
   baseline-browser-mapping@2.11.23: {}
 
   bcrypt@6.0.0:
@@ -5049,6 +5156,11 @@ snapshots:
   buffer-equal-constant-time@1.0.1: {}
 
   buffer-from@1.1.2: {}
+
+  buffer@6.0.3:
+    dependencies:
+      base64-js: 1.5.1
+      ieee754: 1.2.1
 
   busboy@1.6.0:
     dependencies:
@@ -5609,6 +5721,10 @@ snapshots:
       wordwrap: 1.0.0
     optionalDependencies:
       uglify-js: 3.19.3
+
+  hardhat-dependency-compiler@1.2.1(hardhat@2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3)):
+    dependencies:
+      hardhat: 2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3)
 
   hardhat@2.29.1(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.5.1)(typescript@5.9.3))(typescript@5.9.3):
     dependencies:
@@ -6506,6 +6622,10 @@ snapshots:
       pathe: 2.0.3
 
   pluralize@8.0.0: {}
+
+  poseidon-lite@0.3.0: {}
+
+  poseidon-solidity@0.0.5: {}
 
   pretty-format@30.5.1:
     dependencies:

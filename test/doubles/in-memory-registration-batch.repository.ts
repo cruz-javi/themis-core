@@ -64,6 +64,7 @@ export class InMemoryRegistrationBatchRepository implements RegistrationBatchRep
       onChainTxHash: input.onChainTxHash,
       onChainGroupId: input.onChainGroupId,
       insertedAt: new Date(),
+      failureReason: null,
     });
     this.batches.set(id, updated);
     this.credentials.markInsertedByBatch(id);

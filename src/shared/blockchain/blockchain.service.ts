@@ -27,14 +27,31 @@ export class BlockchainService {
   private readonly wallet: Wallet;
 
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {
+    // cacheTimeout -1: ethers v6 cachea 250ms las lecturas RPC identicas, y con un nodo de
+    // minado instantaneo (Hardhat) la 2da transaccion consecutiva del relayer reusa el nonce
+    // cacheado de la 1ra (NONCE_EXPIRED). CU-09 envia createGroup y addMembers seguidas.
     this.provider = new JsonRpcProvider(config.chain.rpcUrl, undefined, {
       staticNetwork: true,
+      cacheTimeout: -1,
     });
     this.wallet = new Wallet(config.chain.relayerPrivateKey, this.provider);
   }
 
   get relayerAddress(): string {
     return this.wallet.address;
+  }
+
+  /**
+   * Expuesto para que otros modulos (p. ej. checkpoints, para el registro
+   * Semaphore) puedan construir su propio Contract con una ABI distinta a
+   * THEMIS_REGISTRY_ABI, sin duplicar el provider/wallet del relayer.
+   */
+  getWallet(): Wallet {
+    return this.wallet;
+  }
+
+  getProvider(): JsonRpcProvider {
+    return this.provider;
   }
 
   getRegistry(): Contract | null {

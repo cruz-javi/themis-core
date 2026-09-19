@@ -7,6 +7,14 @@ import { Election } from '../../elections/domain/election.entity';
 import { CloseCheckpointUseCase } from './close-checkpoint.usecase';
 
 function computeDueAt(election: Election): Date {
+  // Registro ya cerrado: un unico checkpoint final, vencido desde registroFin, para
+  // armar el lote con lo que quedo pendiente (incluidas credenciales presentadas tarde
+  // por el delay aleatorio de la app). El CAS de tryClaimCheckpoint garantiza que solo
+  // se dispara una vez: tras ese cierre lastCheckpointClosedAt queda > registroFin.
+  if (election.estado === 'REGISTRO_CERRADO') {
+    return election.registroFin;
+  }
+
   const base =
     election.lastCheckpointClosedAt ?? election.padronConfiguradoEn ?? election.registroInicio;
   return new Date(base.getTime() + election.checkpointIntervalEfectivo * 60_000);
@@ -28,7 +36,9 @@ export class CloseDueCheckpointsUseCase {
   ) {}
 
   async execute(): Promise<void> {
-    const elections = await this.electionRepository.findMany({ estado: 'REGISTRO_ABIERTO' });
+    const elections = await this.electionRepository.findMany({
+      estados: ['REGISTRO_ABIERTO', 'REGISTRO_CERRADO'],
+    });
     const now = new Date();
 
     for (const election of elections) {

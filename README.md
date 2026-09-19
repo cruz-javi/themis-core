@@ -37,13 +37,17 @@ Necesitas tres terminales:
 # 1 - nodo blockchain local
 pnpm chain:node
 
-# 2 - desplegar el contrato (una vez por arranque del nodo)
+# 2 - desplegar los contratos, en este orden (una vez por arranque del nodo)
 pnpm chain:deploy:local
-# copia la direccion que imprime en CONTRACT_ADDRESS del .env
+pnpm chain:deploy:semaphore:local
+# copia las direcciones que imprimen en CONTRACT_ADDRESS y SEMAPHORE_REGISTRY_ADDRESS del .env
 
 # 3 - el backend
 pnpm start:dev
 ```
+
+Si reinicias el nodo, repite los dos deploys: Hardhat pierde todo su estado. Para probar el flujo completo
+(registro, lotes, aprobacion, insercion on-chain) ver [`docs/guia-prueba-end-to-end.md`](docs/guia-prueba-end-to-end.md).
 
 - API: http://localhost:3000/api/v1
 - Swagger: http://localhost:3000/docs
@@ -66,6 +70,7 @@ pnpm start:dev
 | `CHAIN_ID` | 31337 en local |
 | `RELAYER_PRIVATE_KEY` | Clave que paga el gas |
 | `CONTRACT_ADDRESS` | Direccion del contrato desplegado |
+| `SEMAPHORE_REGISTRY_ADDRESS` | Direccion de `ThemisSemaphoreRegistry`, el contrato donde se insertan los lotes (CU-09) |
 | `SSO_MOCK_SECRET` | Firma HMAC de las assertions del mock SSO (HU-00), minimo 32 caracteres |
 | `SSO_MOCK_TOKEN_TTL_SECONDS` | Tiempo de vida de esas assertions, en segundos |
 
@@ -148,8 +153,10 @@ Levanta el nodo Hardhat y el backend. La base de datos siempre es Neon, no hay P
 | `pnpm run seed:platform-users` | Siembra cuentas de prueba de Admin/Autoridad/Auditor (HU00_1) |
 | `pnpm chain:node` | Nodo blockchain local |
 | `pnpm chain:compile` | Compila los contratos |
-| `pnpm chain:deploy:local` | Despliega en el nodo local |
+| `pnpm chain:deploy:local` | Despliega `ThemisRegistry` en el nodo local |
+| `pnpm chain:deploy:semaphore:local` | Despliega el registro Semaphore (verificador + Poseidon + `ThemisSemaphoreRegistry`) |
+| `pnpm run test:manual-flow` | Prueba manual de punta a punta contra el backend, la base y la cadena reales |
 
-Los tests requieren Node ejecutado con `--experimental-vm-modules` (ya configurado en los scripts
+Los tests requieren Node 24 o superior y Node ejecutado con `--experimental-vm-modules` (ya configurado en los scripts
 `test`/`test:e2e`) porque las dependencias de `@nestjs/*` en el stack aprobado se resuelven como
 ESM y Jest 30 solo puede `require()` ESM de forma sincrona con esa flag activa.

@@ -14,7 +14,7 @@ function buildConfig(): AppConfig {
     database: { url: '', directUrl: '' },
     jwt: { secret: 'x'.repeat(16) },
     ai: { baseUrl: '', token: '', timeoutMs: 1000 },
-    chain: { rpcUrl: '', chainId: 1, relayerPrivateKey: '', contractAddress: '' },
+    chain: { rpcUrl: '', chainId: 1, relayerPrivateKey: '', contractAddress: '', semaphoreRegistryAddress: '' },
     ssoMock: { secret: 'x'.repeat(32), tokenTtlSeconds: 300 },
     registrationSigning: { privateKeyJwk: '{}', publicKeyJwk: '{}' },
   };

@@ -76,4 +76,29 @@ describe('CloseDueCheckpointsUseCase', () => {
     expect(await batchRepository.findByElection(notDueElection.id)).toHaveLength(0);
     expect(await batchRepository.findByElection(draftElection.id)).toHaveLength(0);
   });
+
+  it('en REGISTRO_CERRADO cierra un unico checkpoint final con lo que quedo pendiente', async () => {
+    const election = await createElection('Registro cerrado');
+    electionRepository.forceStatus(election.id, 'REGISTRO_CERRADO');
+    // ultimo checkpoint normal, antes de registroFin y con el intervalo aun sin vencer
+    electionRepository.forceLastCheckpointClosedAt(election.id, new Date('2026-01-09T23:30:00Z'));
+    await credentialRepository.create({
+      electionId: election.id,
+      commitment: 'tarde-1',
+      preparedMessage: 'm',
+      signature: 's',
+    });
+
+    await useCase.execute();
+    expect(await batchRepository.findByElection(election.id)).toHaveLength(1);
+
+    await credentialRepository.create({
+      electionId: election.id,
+      commitment: 'tarde-2',
+      preparedMessage: 'm',
+      signature: 's',
+    });
+    await useCase.execute();
+    expect(await batchRepository.findByElection(election.id)).toHaveLength(1);
+  });
 });

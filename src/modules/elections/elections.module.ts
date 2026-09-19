@@ -12,6 +12,8 @@ import { ReplaceAuthorityUseCase } from './application/replace-authority.usecase
 import { ListAuthoritiesUseCase } from './application/list-authorities.usecase';
 import { ConfigureCheckpointPolicyUseCase } from './application/configure-checkpoint-policy.usecase';
 import { GetEffectivePolicyUseCase } from './application/get-effective-policy.usecase';
+import { AdvanceElectionLifecycleUseCase } from './application/advance-election-lifecycle.usecase';
+import { ElectionLifecycleScheduler } from './infrastructure/election-lifecycle.scheduler';
 import { PrismaElectionRepository } from './infrastructure/prisma-election.repository';
 import { PrismaRollConfigRepository } from './infrastructure/prisma-roll-config.repository';
 import { PrismaAuthorityRepository } from './infrastructure/prisma-authority.repository';
@@ -39,6 +41,8 @@ import { AuthModule } from '../auth/auth.module';
     ListAuthoritiesUseCase,
     ConfigureCheckpointPolicyUseCase,
     GetEffectivePolicyUseCase,
+    AdvanceElectionLifecycleUseCase,
+    ElectionLifecycleScheduler,
     { provide: ELECTION_REPOSITORY, useClass: PrismaElectionRepository },
     { provide: ROLL_CONFIG_REPOSITORY, useClass: PrismaRollConfigRepository },
     { provide: AUTHORITY_REPOSITORY, useClass: PrismaAuthorityRepository },

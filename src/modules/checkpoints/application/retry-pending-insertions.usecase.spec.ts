@@ -57,6 +57,7 @@ describe('RetryPendingInsertionsUseCase', () => {
 
     const updated = await batchRepository.findById(batch!.id);
     expect(updated?.status).toBe('INSERTED');
+    expect(updated?.failureReason).toBeNull();
     expect(onChain.callCount).toBe(1);
   });
 });

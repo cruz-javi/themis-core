@@ -89,6 +89,9 @@ export class InMemoryElectionRepository
       if (filter.estado && election.estado !== filter.estado) {
         return false;
       }
+      if (!filter.estado && filter.estados && !filter.estados.includes(election.estado)) {
+        return false;
+      }
       return true;
     });
   }
@@ -133,6 +136,19 @@ export class InMemoryElectionRepository
       return false;
     }
     this.elections.set(electionId, this.clone(existing, { lastCheckpointClosedAt: new Date() }));
+    return true;
+  }
+
+  async transitionStatus(
+    electionId: string,
+    from: ElectionStatus,
+    to: ElectionStatus,
+  ): Promise<boolean> {
+    const existing = this.getOrThrow(electionId);
+    if (existing.estado !== from) {
+      return false;
+    }
+    this.elections.set(electionId, this.clone(existing, { estado: to }));
     return true;
   }
 

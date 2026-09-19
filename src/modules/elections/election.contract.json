@@ -7,7 +7,7 @@
     "registroFin": "string (ISO 8601)",
     "votacionInicio": "string (ISO 8601)",
     "votacionFin": "string (ISO 8601)",
-    "estado": "'BORRADOR' | 'REGISTRO_ABIERTO' | 'VOTACION_ABIERTA' | 'CERRADA'",
+    "estado": "'BORRADOR' | 'REGISTRO_ABIERTO' | 'REGISTRO_CERRADO' | 'VOTACION_ABIERTA' | 'CERRADA'",
     "mecanismoCriptografico": "'SEMAPHORE'",
     "umbralFirmas": "number",
     "opciones": "Option[]",
