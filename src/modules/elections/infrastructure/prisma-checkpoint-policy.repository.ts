@@ -14,10 +14,11 @@ export class PrismaCheckpointPolicyRepository implements CheckpointPolicyReposit
   async configure(
     electionId: string,
     input: ConfigureCheckpointPolicyInput,
+    updatedBy: string,
   ): Promise<Election> {
     const row = await this.prisma.election.update({
       where: { id: electionId },
-      data: { ...input, checkpointPolicyConfiguradoEn: new Date() },
+      data: { ...input, checkpointPolicyConfiguradoEn: new Date(), updatedBy },
       include: { opciones: true },
     });
 

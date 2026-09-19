@@ -50,10 +50,11 @@ describe('ConfigureCheckpointPolicyUseCase / GetEffectivePolicyUseCase', () => {
   it('configura y luego devuelve el valor explícito (AC-01, AC-02)', async () => {
     const election = await createElection();
 
-    await configureUseCase.execute(election.id, {
+    const configured = await configureUseCase.execute(election.id, {
       checkpointIntervalMinutes: 30,
       rateLimitThresholdPerMinute: 100,
-    });
+    }, 'admin-2');
+    expect(configured.updatedBy).toBe('admin-2');
     const policy = await getEffectiveUseCase.execute(election.id);
 
     expect(policy).toEqual({
@@ -70,7 +71,7 @@ describe('ConfigureCheckpointPolicyUseCase / GetEffectivePolicyUseCase', () => {
       configureUseCase.execute(election.id, {
         checkpointIntervalMinutes: 2,
         rateLimitThresholdPerMinute: 50,
-      }),
+      }, 'admin-2'),
     ).rejects.toBeInstanceOf(CheckpointIntervalOutOfRangeError);
   });
 
@@ -81,7 +82,7 @@ describe('ConfigureCheckpointPolicyUseCase / GetEffectivePolicyUseCase', () => {
       configureUseCase.execute(election.id, {
         checkpointIntervalMinutes: 60,
         rateLimitThresholdPerMinute: 20000,
-      }),
+      }, 'admin-2'),
     ).rejects.toBeInstanceOf(RateLimitThresholdOutOfRangeError);
   });
 
@@ -93,7 +94,7 @@ describe('ConfigureCheckpointPolicyUseCase / GetEffectivePolicyUseCase', () => {
       configureUseCase.execute(election.id, {
         checkpointIntervalMinutes: 60,
         rateLimitThresholdPerMinute: 50,
-      }),
+      }, 'admin-2'),
     ).rejects.toBeInstanceOf(CheckpointPolicyLockedError);
   });
 });

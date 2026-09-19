@@ -11,6 +11,7 @@ import {
   AuthorityAccountNotFoundError,
   AuthorityAccountInvalidRoleError,
   AuthorityAccountInactiveError,
+  AuthorityAlreadyDesignatedError,
 } from './election.errors';
 import {
   PLATFORM_USER_REPOSITORY,
@@ -35,12 +36,13 @@ export class ReplaceAuthorityUseCase {
   ) {}
 
   async execute(
+    electionId: string,
     authorityId: string,
     input: ReplaceAuthorityUseCaseInput,
     actorId: string,
   ): Promise<AuthorityWithEmail> {
     const authority = await this.authorityRepository.findById(authorityId);
-    if (!authority) {
+    if (!authority || authority.electionId !== electionId) {
       throw new AuthorityNotFoundError();
     }
 
@@ -60,10 +62,24 @@ export class ReplaceAuthorityUseCase {
       if (!account.isActive) {
         throw new AuthorityAccountInactiveError();
       }
+      if (input.platformUserId !== authority.platformUserId) {
+        const siblings = await this.authorityRepository.findByElection(electionId);
+        if (siblings.some((sibling) => sibling.platformUserId === input.platformUserId)) {
+          throw new AuthorityAlreadyDesignatedError();
+        }
+      }
     }
 
     const replaceInput: ReplaceAuthorityInput = { ...input, updatedBy: actorId };
-    const updated = await this.authorityRepository.replace(authorityId, replaceInput);
+    let updated;
+    try {
+      updated = await this.authorityRepository.replace(authorityId, replaceInput);
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new AuthorityAlreadyDesignatedError();
+      }
+      throw error;
+    }
     const account = await this.platformUserRepository.findById(updated.platformUserId);
 
     return {
@@ -73,5 +89,14 @@ export class ReplaceAuthorityUseCase {
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
     };
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2002'
+    );
   }
 }

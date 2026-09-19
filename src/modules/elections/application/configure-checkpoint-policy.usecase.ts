@@ -25,6 +25,7 @@ export class ConfigureCheckpointPolicyUseCase {
   async execute(
     electionId: string,
     input: ConfigureCheckpointPolicyInput,
+    actorId: string,
   ): Promise<Election> {
     const election = await this.electionRepository.findById(electionId);
     if (!election) {
@@ -34,6 +35,6 @@ export class ConfigureCheckpointPolicyUseCase {
     assertCheckpointIntervalInRange(input.checkpointIntervalMinutes);
     assertRateLimitThresholdInRange(input.rateLimitThresholdPerMinute);
 
-    return this.checkpointPolicyRepository.configure(electionId, input);
+    return this.checkpointPolicyRepository.configure(electionId, input, actorId);
   }
 }

@@ -15,7 +15,11 @@ export interface ConfigureRollInput {
 }
 
 export interface RollConfigRepository {
-  configure(electionId: string, input: ConfigureRollInput): Promise<Election>;
+  configure(
+    electionId: string,
+    input: ConfigureRollInput,
+    updatedBy: string,
+  ): Promise<Election>;
 }
 
 export const ROLL_CONFIG_REPOSITORY = 'ROLL_CONFIG_REPOSITORY';
