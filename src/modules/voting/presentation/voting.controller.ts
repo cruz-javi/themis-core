@@ -11,10 +11,15 @@ import { ListPublicElectionsUseCase } from '../application/list-public-elections
 import { GetPublicElectionUseCase } from '../application/get-public-election.usecase';
 import { GetMerkleTreeUseCase } from '../application/get-merkle-tree.usecase';
 import { CastVoteUseCase } from '../application/cast-vote.usecase';
+import { GetVoterStatusUseCase } from '../application/get-voter-status.usecase';
 import { CastVoteDto } from './dto/cast-vote.dto';
 import { VoteResponseDto } from './dto/vote-response.dto';
 import { PublicElectionResponseDto } from './dto/public-election-response.dto';
 import { MerkleTreeResponseDto } from './dto/merkle-tree-response.dto';
+import {
+  CheckVoterStatusDto,
+  VoterStatusResponseDto,
+} from './dto/voter-status.dto';
 
 @ApiTags('voting')
 @Controller()
@@ -24,6 +29,7 @@ export class VotingController {
     private readonly getPublicElectionUseCase: GetPublicElectionUseCase,
     private readonly getMerkleTreeUseCase: GetMerkleTreeUseCase,
     private readonly castVoteUseCase: CastVoteUseCase,
+    private readonly getVoterStatusUseCase: GetVoterStatusUseCase,
   ) {}
 
   @Get('elections/public/active')
@@ -82,7 +88,30 @@ export class VotingController {
       electionId,
       optionId: body.optionId,
       proof: body.proof,
+      assertion: body.assertion,
     });
     return VoteResponseDto.fromDomain(receipt);
+  }
+
+  @Post('elections/:electionId/voter-status')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Consulta el estado de registro y votación del elector autenticado',
+  })
+  @ApiResponse({ status: 200, type: VoterStatusResponseDto })
+  async getVoterStatus(
+    @Param('electionId') electionId: string,
+    @Body() body: CheckVoterStatusDto,
+  ): Promise<VoterStatusResponseDto> {
+    const status = await this.getVoterStatusUseCase.execute(
+      electionId,
+      body.assertion,
+    );
+    return {
+      electionId: status.electionId,
+      isRegistered: status.isRegistered,
+      hasVoted: status.hasVoted,
+      votedAt: status.votedAt,
+    };
   }
 }

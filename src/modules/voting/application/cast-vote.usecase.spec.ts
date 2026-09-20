@@ -54,6 +54,21 @@ class MockVotingRepository implements VotingRepository {
   ): Promise<string[]> {
     return this.commitments[electionId] ?? [];
   }
+
+  public votedTokens: Set<string> = new Set();
+  public registeredTokens: Set<string> = new Set();
+
+  async markVoterHasVoted(electionId: string, scopedTokenHash: string): Promise<void> {
+    this.votedTokens.add(`${electionId}:${scopedTokenHash}`);
+  }
+
+  async hasVoterVoted(electionId: string, scopedTokenHash: string): Promise<boolean> {
+    return this.votedTokens.has(`${electionId}:${scopedTokenHash}`);
+  }
+
+  async isVoterRegistered(electionId: string, scopedTokenHash: string): Promise<boolean> {
+    return this.registeredTokens.has(`${electionId}:${scopedTokenHash}`);
+  }
 }
 
 class MockVotingOnChainService implements Partial<VotingOnChainService> {

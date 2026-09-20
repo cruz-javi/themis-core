@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -43,4 +43,12 @@ export class CastVoteDto {
   @ValidateNested()
   @Type(() => SemaphoreProofDto)
   proof!: SemaphoreProofDto;
+
+  @ApiProperty({
+    description: 'Assertion Mock SSO para asentar voto en el padrón electoral sin vincular a la opción',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  assertion?: string;
 }

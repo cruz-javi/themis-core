@@ -11,8 +11,8 @@ export class ElectionNotOpenForVotingError extends DomainError {
 export class DuplicateVoteError extends DomainError {
   readonly code = 'DUPLICATE_VOTE';
   readonly httpStatus = 409;
-  constructor() {
-    super('Este votante ya ha emitido su voto en esta elección');
+  constructor(message = 'Este votante ya ha emitido su voto en esta elección') {
+    super(message);
   }
 }
 
