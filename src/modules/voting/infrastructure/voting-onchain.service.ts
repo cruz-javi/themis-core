@@ -124,6 +124,8 @@ export class VotingOnChainService {
       const registry = new Contract(
         registryAddress,
         [
+          'function createGroup(address admin, uint256 merkleTreeDuration) returns (uint256)',
+          'function groupCounter() view returns (uint256)',
           'function addMembers(uint256 groupId, uint256[] identityCommitments)',
           'function getMerkleTreeRoot(uint256 groupId) view returns (uint256)',
           'function hasMember(uint256 groupId, uint256 identityCommitment) view returns (bool)',
@@ -132,6 +134,14 @@ export class VotingOnChainService {
       );
 
       const groupId = BigInt(onChainGroupId);
+      let counter = (await registry.groupCounter()) as bigint;
+      while (counter <= groupId) {
+        this.logger.log(`Creando grupo ${counter} faltante en blockchain para sincronizar elección...`);
+        const txCreate = await registry.createGroup(wallet.address, 3600n);
+        await txCreate.wait();
+        counter = (await registry.groupCounter()) as bigint;
+      }
+
       for (const row of pendingRows) {
         const commitmentBigInt = BigInt(row.commitment);
         const alreadyMember = await registry.hasMember(groupId, commitmentBigInt);
