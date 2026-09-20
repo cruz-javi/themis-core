@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ElectionsController } from './presentation/elections.controller';
+import { PublicElectionsController } from './presentation/public-elections.controller';
 import { CreateElectionUseCase } from './application/create-election.usecase';
 import { UpdateElectionUseCase } from './application/update-election.usecase';
 import { DeleteElectionUseCase } from './application/delete-election.usecase';
@@ -27,7 +28,10 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [AuthSharedModule, AuthModule],
-  controllers: [ElectionsController],
+  // PublicElectionsController ANTES que ElectionsController: Express matchea
+  // por orden de registro, y GET /elections/:id (ADMIN-only) interceptaria
+  // GET /elections/public si el orden fuera al reves.
+  controllers: [PublicElectionsController, ElectionsController],
   providers: [
     CreateElectionUseCase,
     UpdateElectionUseCase,

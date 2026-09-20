@@ -12,6 +12,7 @@ interface OptionRow {
   electionId: string;
   nombre: string;
   descripcion: string | null;
+  onChainIndex: number;
   createdAt: Date;
 }
 
@@ -45,7 +46,14 @@ interface ElectionRow {
 }
 
 export function optionToDomain(row: OptionRow): Option {
-  return new Option(row.id, row.electionId, row.nombre, row.descripcion, row.createdAt);
+  return new Option(
+    row.id,
+    row.electionId,
+    row.nombre,
+    row.descripcion,
+    row.onChainIndex,
+    row.createdAt,
+  );
 }
 
 export function electionToDomain(row: ElectionRow): Election {

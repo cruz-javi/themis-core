@@ -63,6 +63,7 @@ export class InMemoryRegistrationBatchRepository implements RegistrationBatchRep
       merkleRootAfter: input.merkleRootAfter,
       onChainTxHash: input.onChainTxHash,
       onChainGroupId: input.onChainGroupId,
+      onChainMemberCommitments: input.onChainMemberCommitments,
       insertedAt: new Date(),
       failureReason: null,
     });
@@ -97,6 +98,7 @@ export class InMemoryRegistrationBatchRepository implements RegistrationBatchRep
       merged.approvedAt as Date | null,
       merged.insertedAt as Date | null,
       merged.failureReason as string | null,
+      merged.onChainMemberCommitments as string[],
     );
   }
 

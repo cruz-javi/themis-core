@@ -25,9 +25,10 @@ export class PrismaElectionRepository implements ElectionRepository {
         createdBy: input.createdBy,
         updatedBy: input.createdBy,
         opciones: {
-          create: input.opciones.map((option) => ({
+          create: input.opciones.map((option, index) => ({
             nombre: option.nombre,
             descripcion: option.descripcion,
+            onChainIndex: index,
           })),
         },
       },
@@ -48,9 +49,10 @@ export class PrismaElectionRepository implements ElectionRepository {
           data: {
             ...rest,
             opciones: {
-              create: opciones.map((option) => ({
+              create: opciones.map((option, index) => ({
                 nombre: option.nombre,
                 descripcion: option.descripcion,
+                onChainIndex: index,
               })),
             },
           },

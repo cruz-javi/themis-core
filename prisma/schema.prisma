@@ -100,18 +100,27 @@ model Election {
   presentedCredentials          PresentedCredential[]
   registrationBatches           RegistrationBatch[]
   rateAlerts                    RateAlert[]
+  voteSubmissions               VoteSubmission[]
+  chainSyncState                ChainSyncState?
+  result                        ElectionResult?
 
   @@map("elections")
 }
 
 model Option {
-  id          String   @id @default(uuid())
-  electionId  String   @map("election_id")
-  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  nombre      String
-  descripcion String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  id                    String                 @id @default(uuid())
+  electionId            String                 @map("election_id")
+  election              Election               @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  nombre                String
+  descripcion           String?
+  // CU-10: valor numerico (0..N-1, orden de creacion) usado como `message` de
+  // Semaphore -- Option.id es un UUID y no sirve como uint256 en el contrato.
+  onChainIndex          Int                    @map("on_chain_index")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  voteSubmissions       VoteSubmission[]
+  electionResultOptions ElectionResultOption[]
 
+  @@unique([electionId, onChainIndex])
   @@index([electionId])
   @@map("options")
 }
@@ -214,6 +223,11 @@ model RegistrationBatch {
   merkleRootAfter   String?                  @map("merkle_root_after")
   onChainTxHash     String?                  @map("on_chain_tx_hash")
   onChainGroupId    String?                  @map("on_chain_group_id")
+  // CU-10: el array exacto (mismo orden) que se mando a `addMembers` al
+  // insertar este lote. Es la fuente de verdad para reconstruir el Group de
+  // Semaphore del lado del votante -- no se reconstruye leyendo
+  // PresentedCredential porque su orden de lectura no esta garantizado.
+  onChainMemberCommitments String[]          @default([]) @map("on_chain_member_commitments")
   closedAt          DateTime                 @default(now()) @map("closed_at")
   approvedAt        DateTime?                @map("approved_at")
   insertedAt        DateTime?                @map("inserted_at")
@@ -265,6 +279,77 @@ model RateAlert {
 
   @@index([electionId, createdAt])
   @@map("rate_alerts")
+}
+
+enum VoteSubmissionSource {
+  RELAY
+  CHAIN_SYNC
+}
+
+// CU-10/CU-11: un voto validado on-chain (evento ProofValidated de
+// Semaphore.validateProof). Ninguna columna conecta esta fila con
+// PresentedCredential/RegistrationRequest ni con identidad real (regla 2 del
+// CLAUDE.md raiz) -- nullifier/merkleTreeRoot ya son publicos on-chain por
+// diseno de Semaphore, optionId se guarda en claro a proposito (solo la
+// identidad es anonima, la distribucion de votos es publica). blockNumber es
+// Int (no BigInt): valido en Hardhat local/testnet, nunca supera 2^31 aqui.
+model VoteSubmission {
+  id             String               @id @default(uuid())
+  electionId     String               @map("election_id")
+  election       Election             @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  optionId       String               @map("option_id")
+  option         Option               @relation(fields: [optionId], references: [id])
+  nullifier      String
+  merkleTreeRoot String               @map("merkle_tree_root")
+  scope          String
+  onChainTxHash  String?              @map("on_chain_tx_hash")
+  blockNumber    Int?                 @map("block_number")
+  source         VoteSubmissionSource
+  submittedAt    DateTime             @default(now()) @map("submitted_at")
+
+  @@unique([electionId, nullifier])
+  @@index([electionId, optionId])
+  @@map("vote_submissions")
+}
+
+// CU-11/CU-14: puntero de sincronizacion de eventos ProofValidated leidos
+// desde el grupo on-chain de la eleccion (scope = election.onChainGroupId).
+// Red de seguridad, mismo espiritu que RetryPendingInsertionsUseCase de CU-09.
+model ChainSyncState {
+  id              String   @id @default(uuid())
+  electionId      String   @unique @map("election_id")
+  election        Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  lastSyncedBlock Int      @map("last_synced_block")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("chain_sync_state")
+}
+
+// CU-14: snapshot inmutable del conteo final al cerrar la eleccion. Una vez
+// creado no se reescribe -- idempotente via el unique de electionId.
+model ElectionResult {
+  id                String                 @id @default(uuid())
+  electionId        String                 @unique @map("election_id")
+  election          Election               @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  totalVotes        Int                    @map("total_votes")
+  finalMerkleRoot   String                 @map("final_merkle_root")
+  sourceBlockNumber Int                    @map("source_block_number")
+  computedAt        DateTime               @default(now()) @map("computed_at")
+  opciones          ElectionResultOption[]
+
+  @@map("election_results")
+}
+
+model ElectionResultOption {
+  id               String         @id @default(uuid())
+  electionResultId String         @map("election_result_id")
+  electionResult   ElectionResult @relation(fields: [electionResultId], references: [id], onDelete: Cascade)
+  optionId         String         @map("option_id")
+  option           Option         @relation(fields: [optionId], references: [id])
+  voteCount        Int            @map("vote_count")
+
+  @@unique([electionResultId, optionId])
+  @@map("election_result_options")
 }
 
 model MockSsoUser {

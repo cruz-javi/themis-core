@@ -26,7 +26,7 @@ export class InMemoryElectionRepository
     const id = `election-${this.sequence}`;
     const opciones = input.opciones.map(
       (option, index) =>
-        new Option(`option-${id}-${index}`, id, option.nombre, option.descripcion ?? null, new Date()),
+        new Option(`option-${id}-${index}`, id, option.nombre, option.descripcion ?? null, index, new Date()),
     );
     const election = new Election(
       id,
@@ -52,7 +52,7 @@ export class InMemoryElectionRepository
     const opciones = input.opciones
       ? input.opciones.map(
           (option, index) =>
-            new Option(`option-${id}-${index}`, id, option.nombre, option.descripcion ?? null, new Date()),
+            new Option(`option-${id}-${index}`, id, option.nombre, option.descripcion ?? null, index, new Date()),
         )
       : existing.opciones;
 

@@ -17,6 +17,7 @@ interface RegistrationBatchRow {
   approvedAt: Date | null;
   insertedAt: Date | null;
   failureReason: string | null;
+  onChainMemberCommitments: string[];
 }
 
 export function registrationBatchToDomain(row: RegistrationBatchRow): RegistrationBatch {
@@ -34,5 +35,6 @@ export function registrationBatchToDomain(row: RegistrationBatchRow): Registrati
     row.approvedAt,
     row.insertedAt,
     row.failureReason,
+    row.onChainMemberCommitments,
   );
 }

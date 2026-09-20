@@ -147,29 +147,38 @@ espera a que el cron cierre el checkpoint, aprueba el lote con 3 de las 5 autori
 no tiene ningún endpoint todavía. No borra los datos que crea: quedan en la base para inspeccionar con
 `pnpm prisma:studio`.
 
-## Pendiente para la Fase 2 (voto, CU-10 y CU-11)
+## Fase 2 (voto CU-10, conteo en vivo CU-11, conteo final CU-14, auditoría CU-15): RESUELTA
 
-No se construyó nada de esto; queda documentado para no rediscubrirlo:
+Implementada completa y verificada end-to-end contra el stack local real (Hardhat + Neon), incluida
+criptografía real (no mockeada) — ver `scripts/manual-test-full-flow.ts` (corre las 3 fases: registro,
+checkpoint, y ahora también voto/conteo/cierre). Decisiones que quedaban abiertas, ya tomadas:
 
-- **La app no tiene de dónde obtener la prueba de Merkle**: `ElectionResponseDto` no expone
-  `onChainGroupId` ni `merkleRoot`, y ningún endpoint devuelve miembros/commitments del grupo. Además
-  `GET /elections` es solo ADMIN: no hay endpoint público de elección (estado, opciones, fechas).
-- **`scope` fijo por elección**: el contrato solo impide reusar el mismo nullifier dentro de un grupo; si
-  el `scope` cambiara, un mismo votante produciría nullifiers distintos y podría votar dos veces. Hay que
-  fijarlo (y la codificación de `message`) en el diseño de CU-10.
-- **Control de la ventana de voto**: el contrato no mira estado ni fechas; nada en el backend restringe
-  hoy votar a `VOTACION_ABIERTA`.
-- **Commitments tardíos**: en `REGISTRO_CERRADO` sigue aceptándose la presentación de credenciales y solo
-  hay un checkpoint final. Si ese lote o su aprobación se retrasan más allá de `votacionInicio`, se
-  insertarían commitments con la votación ya abierta; con `merkleTreeDuration` de 1 hora, una prueba
-  hecha contra la raíz anterior seguiría siendo válida solo ese tiempo.
-- **Relayer**, tablas `RELAYERS`/`VOTE_SUBMISSIONS`/`CHAIN_SYNC_STATE`, sincronizador de eventos
-  (`ProofValidated`) y conteo público (CU-11).
-- **`themis-web`**: ruta `/prove` con snarkjs. **`themis-app`**: bundle con `@semaphore-protocol/group` y
-  `proof`, artefactos del circuito (zkey/wasm), pantallas de voto.
-- **Multisig criptográfico on-chain**: hoy el contrato confía en el backend (3 filas en BD). Es una decisión
-  de diseño documentada, no un olvido.
-- Sin pantalla todavía: alertas de ritmo (CU-06).
+- **`scope` de Semaphore = `election.onChainGroupId`** (columna ya existente, única por elección — evita
+  que un mismo votante produzca el mismo nullifier en dos elecciones distintas).
+- **`message` de Semaphore = `Option.onChainIndex`** (columna nueva, 0..N-1 en orden de creación —
+  `Option.id` es un UUID y no sirve como `uint256`).
+- **Control de ventana de voto**: `SubmitVoteUseCase` rechaza con 409 `VOTING_WINDOW_CLOSED` si
+  `election.estado !== 'VOTACION_ABIERTA'` antes de relayar — el contrato en sí sigue sin mirar fechas.
+- **La app ya tiene de dónde sacar la prueba de Merkle**: `GET /elections/:id/voting-context` (público)
+  expone `onChainGroupId` + `members` (commitments en orden real de inserción on-chain, reconstruidos
+  desde `RegistrationBatch.onChainMemberCommitments`, no desde `PresentedCredential`) + el mapeo de
+  opciones a `onChainIndex`. `GET /elections/public` y `GET /elections/public/:id` (ambos públicos)
+  resuelven el resto ("no hay endpoint público de elección").
+- **Relayer**: se reusó el patrón existente (`BlockchainService.getWallet()`, `RELAYER_PRIVATE_KEY`) — no
+  hizo falta una tabla `RELAYERS`. Tablas nuevas: `vote_submissions`, `chain_sync_state`,
+  `election_results` + `election_result_options` (snapshot inmutable de CU-14).
+- **Sincronizador de eventos `ProofValidated`**: `SyncVoteEventsUseCase` (red de seguridad, cron cada
+  minuto vía `VotingScheduler`, mismo espíritu que `RetryPendingInsertionsUseCase` de CU-09).
+- **`themis-web`**: ruta `/prove` (pública pero no linkeada, mismo precedente que `/demo`) con
+  `snarkjs`/`@semaphore-protocol/{group,identity,proof}` reales — los artefactos del circuito se
+  descargan del CDN oficial (`snark-artifacts.pse.dev`), no se vendorizan. **`themis-app`**:
+  `VoteProofBridge` (WebView remoto contra `/prove`, mismo patrón que `CryptoBridge` de CU-05) +
+  pantallas `ElectionSelectPage`/`BallotPage`.
+- **Multisig criptográfico on-chain**: sigue siendo la misma decisión de diseño documentada (el contrato
+  confía en el backend, 3 filas en BD) — no cambió con esta fase.
+- **Commitments tardíos**: sigue siendo el mismo comportamiento ya documentado (`merkleTreeDuration` de
+  1 hora da margen); no se agregó ningún guardrail nuevo — bloquear inserciones tardías rompería el caso
+  legítimo de presentarse tarde y aun así poder votar.
 
 ## Archivos clave
 
