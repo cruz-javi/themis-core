@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ElectionsModule } from './modules/elections/elections.module';
 import { RegistrationModule } from './modules/registration/registration.module';
 import { CheckpointsModule } from './modules/checkpoints/checkpoints.module';
+import { VotingModule } from './modules/voting/voting.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CheckpointsModule } from './modules/checkpoints/checkpoints.module';
     ElectionsModule,
     RegistrationModule,
     CheckpointsModule,
+    VotingModule,
   ],
 })
 export class AppModule {}

@@ -23,6 +23,7 @@ export interface AppConfig {
     relayerPrivateKey: string;
     contractAddress: string;
     semaphoreRegistryAddress: string;
+    votingContractAddress?: string;
   };
   ssoMock: {
     secret: string;
@@ -60,6 +61,7 @@ export function buildConfig(env: Env): AppConfig {
       relayerPrivateKey: env.RELAYER_PRIVATE_KEY,
       contractAddress: env.CONTRACT_ADDRESS,
       semaphoreRegistryAddress: env.SEMAPHORE_REGISTRY_ADDRESS,
+      votingContractAddress: env.VOTING_CONTRACT_ADDRESS,
     },
     ssoMock: {
       secret: env.SSO_MOCK_SECRET,

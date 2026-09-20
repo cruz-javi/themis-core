@@ -22,6 +22,7 @@ export const envSchema = z.object({
   RELAYER_PRIVATE_KEY: z.string().min(1),
   CONTRACT_ADDRESS: z.string().default(''),
   SEMAPHORE_REGISTRY_ADDRESS: z.string().default(''),
+  VOTING_CONTRACT_ADDRESS: z.string().default(''),
 
   SSO_MOCK_SECRET: z.string().min(32),
   SSO_MOCK_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(300),

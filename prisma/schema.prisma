@@ -100,6 +100,7 @@ model Election {
   presentedCredentials          PresentedCredential[]
   registrationBatches           RegistrationBatch[]
   rateAlerts                    RateAlert[]
+  voteReceipts                  VoteReceipt[]
 
   @@map("elections")
 }
@@ -108,9 +109,11 @@ model Option {
   id          String   @id @default(uuid())
   electionId  String   @map("election_id")
   election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
-  nombre      String
-  descripcion String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  nombre       String
+  descripcion  String?
+  onChainIndex Int?          @map("on_chain_index")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  voteReceipts VoteReceipt[]
 
   @@index([electionId])
   @@map("options")
@@ -280,3 +283,20 @@ model MockSsoUser {
 
   @@map("mock_sso_users")
 }
+
+// CU-10: recibo anonimo del voto emitido para auditoria y escrutinio.
+// No contiene identidad real, credenciales, tokens ni IP.
+model VoteReceipt {
+  id         String   @id @default(uuid())
+  electionId String   @map("election_id")
+  election   Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  optionId   String   @map("option_id")
+  option     Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  nullifier  String   @unique
+  txHash     String   @map("tx_hash")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([electionId])
+  @@map("vote_receipts")
+}
+

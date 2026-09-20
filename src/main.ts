@@ -18,7 +18,24 @@ async function bootstrap(): Promise<void> {
     new ValidationPipe({ whitelist: true, transform: true }),
   );
   app.useGlobalFilters(new DomainErrorFilter());
-  app.enableCors({ origin: config.corsOrigins, credentials: true });
+  const allowedOrigins =
+    config.nodeEnv === 'development'
+      ? (
+          origin: string | undefined,
+          callback: (err: Error | null, allow?: boolean) => void,
+        ) => {
+          if (
+            !origin ||
+            /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+            config.corsOrigins.includes(origin)
+          ) {
+            callback(null, true);
+          } else {
+            callback(null, false);
+          }
+        }
+      : config.corsOrigins;
+  app.enableCors({ origin: allowedOrigins, credentials: true });
   app.enableShutdownHooks();
 
   const swagger = new DocumentBuilder()

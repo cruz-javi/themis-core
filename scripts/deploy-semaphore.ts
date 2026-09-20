@@ -1,5 +1,6 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import '@nomicfoundation/hardhat-ethers';
 import hre from 'hardhat';
 
 async function main(): Promise<void> {
@@ -24,6 +25,12 @@ async function main(): Promise<void> {
   await registry.waitForDeployment();
 
   const address = await registry.getAddress();
+
+  const votingFactory = await ethers.getContractFactory('ThemisVoting');
+  const voting = await votingFactory.deploy(address);
+  await voting.waitForDeployment();
+  const votingAddress = await voting.getAddress();
+
   const blockNumber = await ethers.provider.getBlockNumber();
 
   const record = {
@@ -31,6 +38,7 @@ async function main(): Promise<void> {
     chainId: Number((await ethers.provider.getNetwork()).chainId),
     contract: 'ThemisSemaphoreRegistry',
     address,
+    votingAddress,
     verifierAddress,
     poseidonAddress,
     deployer: deployer.address,
@@ -46,7 +54,7 @@ async function main(): Promise<void> {
   );
 
   console.log(JSON.stringify(record, null, 2));
-  console.log(`\nCopia esta linea en tu .env:\nSEMAPHORE_REGISTRY_ADDRESS=${address}`);
+  console.log(`\nCopia esta linea en tu .env:\nSEMAPHORE_REGISTRY_ADDRESS=${address}\nVOTING_CONTRACT_ADDRESS=${votingAddress}`);
 }
 
 main().catch((error) => {

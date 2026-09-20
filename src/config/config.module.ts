@@ -37,6 +37,7 @@ import type { AppConfig } from './configuration';
           SEMAPHORE_REGISTRY_ADDRESS: configService.get(
             'SEMAPHORE_REGISTRY_ADDRESS',
           ),
+          VOTING_CONTRACT_ADDRESS: configService.get('VOTING_CONTRACT_ADDRESS'),
           SSO_MOCK_SECRET: configService.get('SSO_MOCK_SECRET'),
           SSO_MOCK_TOKEN_TTL_SECONDS: configService.get(
             'SSO_MOCK_TOKEN_TTL_SECONDS',
