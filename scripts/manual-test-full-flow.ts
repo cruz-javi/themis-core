@@ -1,30 +1,38 @@
 /**
- * Prueba manual end-to-end de TODO lo implementado hasta ahora del diagrama de secuencia
- * de votacion: FASE 1 (registro, CU-05) + el bloque de checkpoint (CU-06 a CU-09).
+ * Prueba manual end-to-end de TODO lo implementado del diagrama de secuencia de
+ * votacion: FASE 1 (registro, CU-05), checkpoint (CU-06 a CU-09), y FASE 2 (voto,
+ * CU-10, conteo en vivo CU-11, y conteo final CU-14).
  *
- * CU-09 (insercion on-chain) ya es real: los commitments se insertan en un grupo
- * Semaphore de verdad (ThemisSemaphoreRegistry.sol, wrapper del Semaphore oficial
- * v4). Sigue faltando FASE 2 (emision de voto, CU-10) -- no existe ningun endpoint de
- * voto todavia (ver themis-core/docs/checkpoint-lote-multisig.md).
+ * CU-09 (insercion on-chain) y CU-10 (voto) ya son reales: los commitments se
+ * insertan en un grupo Semaphore de verdad y el voto se valida con una prueba
+ * zk-SNARK real (Semaphore.validateProof) via ThemisSemaphoreRegistry.sol
+ * (wrapper del Semaphore oficial v4). La prueba se genera con las mismas
+ * librerias que usa /prove de themis-web (@semaphore-protocol/group + proof),
+ * agregadas como devDependency solo para este script.
  *
  * Requisitos antes de correr:
  *   - Los 4 procesos: pnpm chain:node / chain:deploy:local / chain:deploy:semaphore:local /
  *     start:dev (con SEMAPHORE_REGISTRY_ADDRESS ya pegado en .env)
  *   - pnpm run seed:platform-users corrido al menos una vez (admin@themis.dev /
  *     superusuario@themis.dev con password 123123)
+ *   - Acceso a internet: generateProof descarga los artefactos oficiales del
+ *     circuito de snark-artifacts.pse.dev la primera vez que se necesita cada
+ *     profundidad de arbol.
  *
  * Uso: pnpm run test:manual-flow
  *
  * Este script habla HTTP con el backend real (no usa supertest ni levanta un
- * TestingModule) -- es el mismo camino que seguiria themis-app/themis-web, y ejercita el
- * cron real de cierre de checkpoint (espera hasta ~70s a que el tick de EVERY_MINUTE lo
- * cierre solo, no lo dispara a mano).
+ * TestingModule) -- es el mismo camino que seguirian themis-app/themis-web, y
+ * ejercita los crons reales (cierre de checkpoint, y el VotingScheduler que
+ * sincroniza votos y calcula el conteo final) esperando a que corran solos.
  */
 import { config as loadEnv } from 'dotenv';
 import { webcrypto } from 'node:crypto';
 import { RSABSSA } from '@cloudflare/blindrsa-ts';
 import { PrismaClient } from '@prisma/client';
 import { Identity } from '@semaphore-protocol/identity';
+import { Group } from '@semaphore-protocol/group';
+import { generateProof } from '@semaphore-protocol/proof';
 import { hashPassword } from '../src/modules/mock-sso/infrastructure/hash.util';
 
 loadEnv();
@@ -148,6 +156,14 @@ async function registerVoter(electionId: string, codigoInstitucional: string, co
   console.log(`  - ${codigoInstitucional}: registrado y credencial presentada (commitment=${commitment})`);
 }
 
+/** PUT directo (sin guard de rol) para forzar transiciones que el ciclo de vida
+ * automatico no haria en la ventana de tiempo de esta prueba (votacionInicio
+ * queda deliberadamente lejos en el futuro para no competir con el cron
+ * mientras corren las fases anteriores). */
+async function forceElectionStatus(electionId: string, estado: string): Promise<void> {
+  await prisma.election.update({ where: { id: electionId }, data: { estado: estado as never } });
+}
+
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -262,8 +278,12 @@ async function main() {
   console.log('Eleccion abierta automaticamente: REGISTRO_ABIERTO\n');
 
   console.log('=== FASE 1: registro de votantes (CU-05) ===');
+  // Se guardan las Identity completas (no solo el commitment): CU-10 las
+  // necesita para generar la prueba de voto mas adelante.
+  const voterIdentities: Identity[] = [];
   for (let i = 0; i < voterCodes.length; i += 1) {
     const identity = new Identity();
+    voterIdentities.push(identity);
     await registerVoter(electionId, voterCodes[i], identity.commitment.toString());
   }
 
@@ -324,13 +344,124 @@ async function main() {
     `OK: onChainTxHash y merkleRootAfter tienen forma real (no 0xstub-.../stub-root-...).`,
   );
 
-  console.log('\n=== FASE 2 (emision de voto, CU-10): NO IMPLEMENTADA ===');
-  console.log(
-    'No existe ningun endpoint de voto todavia.\n' +
-      'Esta fase del diagrama no se puede probar hasta que se implemente CU-10.',
-  );
+  console.log('\n=== FASE 2: abriendo votacion a mano (VOTACION_ABIERTA) ===');
+  // votacionInicio quedo deliberadamente 48h en el futuro (ver FASE 0) para que
+  // el cron de ciclo de vida no compitiera con las fases anteriores -- se fuerza
+  // el estado directo, igual criterio que ya usa este script para
+  // lastCheckpointClosedAt mas arriba.
+  await forceElectionStatus(electionId, 'VOTACION_ABIERTA');
+  console.log('Eleccion forzada a VOTACION_ABIERTA');
 
-  console.log(`\nEleccion de prueba: ${electionId} (no se borra automaticamente, queda en la BD).`);
+  console.log('\n=== FASE 2: emision de voto real (CU-10) ===');
+  const votingContext = await getJson(`/elections/${electionId}/voting-context`);
+  const { onChainGroupId, members, options } = votingContext.body as {
+    onChainGroupId: string;
+    members: string[];
+    options: { id: string; onChainIndex: number }[];
+  };
+  console.log(`  voting-context: grupo=${onChainGroupId}, members=${members.length}`);
+  if (members.length !== voterIdentities.length) {
+    throw new Error(
+      `voting-context trajo ${members.length} members, se esperaban ${voterIdentities.length}`,
+    );
+  }
+
+  // Los 2 primeros votantes eligen la opcion A, el 3ro la B -- para poder
+  // verificar el desglose del tally mas abajo, no solo el total.
+  const chosenOption = [options[0], options[0], options[1]];
+  const group = new Group(members.map((member) => BigInt(member)));
+
+  for (let i = 0; i < voterIdentities.length; i += 1) {
+    const identity = voterIdentities[i];
+    const option = chosenOption[i];
+    const proof = await generateProof(
+      identity,
+      group,
+      BigInt(option.onChainIndex),
+      BigInt(onChainGroupId),
+    );
+    const voteResponse = await postJson(`/elections/${electionId}/votes`, {
+      merkleTreeDepth: proof.merkleTreeDepth,
+      merkleTreeRoot: proof.merkleTreeRoot,
+      nullifier: proof.nullifier,
+      message: proof.message,
+      scope: proof.scope,
+      points: proof.points,
+    });
+    if (voteResponse.status !== 201) {
+      throw new Error(`POST /votes fallo para el votante ${i + 1}: ${voteResponse.status}`);
+    }
+    console.log(
+      `  Voto ${i + 1}/${voterIdentities.length} emitido -> onChainTxHash=${voteResponse.body.onChainTxHash}`,
+    );
+  }
+
+  // Reintentar el mismo nullifier debe rechazarse -- prueba que el contrato
+  // (no solo la app) es la fuente de verdad de "un voto por identidad".
+  const firstIdentity = voterIdentities[0];
+  const duplicateProof = await generateProof(
+    firstIdentity,
+    group,
+    BigInt(chosenOption[0].onChainIndex),
+    BigInt(onChainGroupId),
+  );
+  const duplicateResponse = await postJson(`/elections/${electionId}/votes`, {
+    merkleTreeDepth: duplicateProof.merkleTreeDepth,
+    merkleTreeRoot: duplicateProof.merkleTreeRoot,
+    nullifier: duplicateProof.nullifier,
+    message: duplicateProof.message,
+    scope: duplicateProof.scope,
+    points: duplicateProof.points,
+  });
+  if (duplicateResponse.status !== 409 || duplicateResponse.body.code !== 'VOTE_ALREADY_CAST') {
+    throw new Error(
+      `El segundo voto de la misma identidad deberia rechazarse con 409 VOTE_ALREADY_CAST, ` +
+        `llego status=${duplicateResponse.status} code=${duplicateResponse.body.code}`,
+    );
+  }
+  console.log('  OK: un segundo voto con la misma identidad se rechaza (409 VOTE_ALREADY_CAST)');
+
+  console.log('\n=== FASE 2: conteo en vivo (CU-11) ===');
+  const tally = await getJson(`/elections/${electionId}/votes/tally`);
+  console.log(JSON.stringify(tally.body, null, 2));
+  if (tally.body.totalVotes !== voterIdentities.length) {
+    throw new Error(`Tally esperaba ${voterIdentities.length} votos, trajo ${tally.body.totalVotes}`);
+  }
+  const optionATally = tally.body.opciones.find((o: { optionId: string }) => o.optionId === options[0].id);
+  if (optionATally?.voteCount !== 2) {
+    throw new Error(`Se esperaban 2 votos para la opcion A, tally trajo ${optionATally?.voteCount}`);
+  }
+  console.log('OK: el tally en vivo refleja los 3 votos con el desglose 2/1 esperado.');
+
+  console.log('\n=== FASE 3: cierre y conteo final (CU-14) ===');
+  await forceElectionStatus(electionId, 'CERRADA');
+  console.log('Eleccion forzada a CERRADA. Esperando al VotingScheduler (hasta ~70s)...');
+
+  let auditResult: any = null;
+  for (let attempt = 0; attempt < 14; attempt += 1) {
+    await sleep(5000);
+    const audit = await getJson(`/elections/${electionId}/audit/result`, adminCookie);
+    if (audit.body.result) {
+      auditResult = audit.body;
+      break;
+    }
+    console.log(`  ... todavia sin snapshot final (intento ${attempt + 1}/14)`);
+  }
+  if (!auditResult) {
+    throw new Error('El VotingScheduler no genero el snapshot final (ElectionResult) a tiempo');
+  }
+  console.log(JSON.stringify(auditResult, null, 2));
+  if (auditResult.result.totalVotes !== voterIdentities.length) {
+    throw new Error(
+      `ElectionResult.totalVotes esperaba ${voterIdentities.length}, trajo ${auditResult.result.totalVotes}`,
+    );
+  }
+  console.log('OK: CU-14 calculo el snapshot final inmutable con el total correcto (CU-15 lo expone).');
+
+  console.log(
+    `\nEleccion de prueba: ${electionId} (no se borra automaticamente, queda en la BD).\n` +
+      'Ciclo completo CU-01 a CU-15 (salvo CU-12/CU-13, IA, fuera de alcance) verificado end-to-end.',
+  );
   await prisma.$disconnect();
 }
 

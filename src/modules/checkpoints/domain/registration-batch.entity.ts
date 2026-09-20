@@ -19,5 +19,9 @@ export class RegistrationBatch {
     public readonly approvedAt: Date | null = null,
     public readonly insertedAt: Date | null = null,
     public readonly failureReason: string | null = null,
+    // CU-10: el array exacto (mismo orden) que se mando a `addMembers` al
+    // insertar este lote -- fuente de verdad para reconstruir el Group de
+    // Semaphore del lado del votante.
+    public readonly onChainMemberCommitments: string[] = [],
   ) {}
 }

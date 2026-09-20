@@ -49,5 +49,6 @@ import { BlockchainModule } from '../../shared/blockchain/blockchain.module';
     { provide: RATE_ALERT_REPOSITORY, useClass: PrismaRateAlertRepository },
     { provide: SEMAPHORE_ONCHAIN_PORT, useClass: SemaphoreOnChainService },
   ],
+  exports: [REGISTRATION_BATCH_REPOSITORY],
 })
 export class CheckpointsModule {}

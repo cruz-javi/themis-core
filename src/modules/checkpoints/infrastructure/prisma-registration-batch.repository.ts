@@ -75,6 +75,7 @@ export class PrismaRegistrationBatchRepository implements RegistrationBatchRepos
           merkleRootAfter: input.merkleRootAfter,
           onChainTxHash: input.onChainTxHash,
           onChainGroupId: input.onChainGroupId,
+          onChainMemberCommitments: input.onChainMemberCommitments,
           insertedAt: new Date(),
           // Un lote recuperado por reintento no debe conservar el error del intento fallido.
           failureReason: null,

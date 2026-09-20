@@ -12,4 +12,7 @@ export class OptionResponseDto {
 
   @ApiProperty({ nullable: true })
   descripcion!: string | null;
+
+  @ApiProperty({ readOnly: true, description: 'Valor usado como `message` de Semaphore al votar' })
+  onChainIndex!: number;
 }

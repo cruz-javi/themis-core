@@ -51,6 +51,7 @@ export class RetryPendingInsertionsUseCase {
           merkleRootAfter: result.newRoot,
           onChainTxHash: result.txHash,
           onChainGroupId: result.groupId,
+          onChainMemberCommitments: commitments,
         });
         await this.electionRepository.setOnChainGroup(batch.electionId, result.groupId);
         await this.electionRepository.setMerkleRoot(batch.electionId, result.newRoot);

@@ -67,6 +67,7 @@ export class ElectionResponseDto {
       electionId: option.electionId,
       nombre: option.nombre,
       descripcion: option.descripcion,
+      onChainIndex: option.onChainIndex,
     }));
     dto.createdAt = election.createdAt;
     dto.createdBy = election.createdBy;

@@ -60,7 +60,13 @@ export class PrismaPresentedCredentialRepository implements PresentedCredentialR
   }
 
   async findByBatch(batchId: string): Promise<PresentedCredential[]> {
-    const rows = await this.prisma.presentedCredential.findMany({ where: { batchId } });
+    // Orden deterministico (defensivo): la fuente de verdad real del orden
+    // on-chain es RegistrationBatch.onChainMemberCommitments (CU-10), pero
+    // esto evita que el propio envio a addMembers sea no-determinista.
+    const rows = await this.prisma.presentedCredential.findMany({
+      where: { batchId },
+      orderBy: [{ presentedAt: 'asc' }, { id: 'asc' }],
+    });
     return rows.map(presentedCredentialToDomain);
   }
 }

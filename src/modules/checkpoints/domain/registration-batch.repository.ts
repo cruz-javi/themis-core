@@ -11,6 +11,8 @@ export interface MarkInsertedInput {
   merkleRootAfter: string;
   onChainTxHash: string;
   onChainGroupId: string;
+  /** CU-10: array exacto (mismo orden) mandado a `addMembers` para este lote. */
+  onChainMemberCommitments: string[];
 }
 
 export interface RegistrationBatchRepository {

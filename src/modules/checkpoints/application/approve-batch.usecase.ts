@@ -125,6 +125,7 @@ export class ApproveBatchUseCase {
         merkleRootAfter: result.newRoot,
         onChainTxHash: result.txHash,
         onChainGroupId: result.groupId,
+        onChainMemberCommitments: commitments,
       });
       await this.electionRepository.setOnChainGroup(electionId, result.groupId);
       await this.electionRepository.setMerkleRoot(electionId, result.newRoot);
