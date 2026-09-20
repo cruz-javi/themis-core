@@ -29,6 +29,14 @@ export class PublicElectionsController {
       .map((election) => PublicElectionResponseDto.fromDomain(election));
   }
 
+  @Get('active')
+  @ApiOperation({ summary: 'Listado de elecciones activas en estado de votación abierta (CU-10)' })
+  @ApiResponse({ status: 200, type: [PublicElectionResponseDto] })
+  async listActive(): Promise<PublicElectionResponseDto[]> {
+    const elections = await this.listElections.execute({ estado: 'VOTACION_ABIERTA' as any });
+    return elections.map((election) => PublicElectionResponseDto.fromDomain(election));
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Detalle publico de una eleccion' })
   @ApiResponse({ status: 200, type: PublicElectionResponseDto })
