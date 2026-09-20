@@ -16,11 +16,37 @@ export class InMemoryPresentedCredentialRepository implements PresentedCredentia
       input.commitment,
       input.preparedMessage,
       input.signature,
-      'PENDING',
+      input.status ?? 'PENDING',
       new Date(),
     );
     this.credentials.push(credential);
     return credential;
+  }
+
+  async updateStatus(
+    electionId: string,
+    commitment: string,
+    status: any,
+  ): Promise<PresentedCredential> {
+    const index = this.credentials.findIndex(
+      (c) => c.electionId === electionId && c.commitment === commitment,
+    );
+    if (index === -1) {
+      throw new Error('PresentedCredential not found');
+    }
+    const current = this.credentials[index];
+    const updated = new PresentedCredential(
+      current.id,
+      current.electionId,
+      current.commitment,
+      current.preparedMessage,
+      current.signature,
+      status,
+      current.presentedAt,
+      current.batchId,
+    );
+    this.credentials[index] = updated;
+    return updated;
   }
 
   async findByElectionAndCommitment(

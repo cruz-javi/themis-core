@@ -1,14 +1,18 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { Contract } from 'ethers';
 import { ELECTION_REPOSITORY, ElectionRepository } from '../../elections/domain/election.repository';
 import { ElectionNotFoundError } from '../../elections/application/election.errors';
 import {
   PRESENTED_CREDENTIAL_REPOSITORY,
   PresentedCredentialRepository,
 } from '../domain/presented-credential.repository';
-import { PresentedCredential } from '../domain/presented-credential.entity';
+import { PresentedCredential, PresentedCredentialStatus } from '../domain/presented-credential.entity';
 import { RegistrationSigningService } from '../infrastructure/registration-signing.service';
 import { assertElectionNotClosed } from './registration-validation';
 import { CredentialAlreadyPresentedError, CredentialInvalidSignatureError } from './registration.errors';
+import { APP_CONFIG } from '../../../config/configuration';
+import type { AppConfig } from '../../../config/configuration';
+import { BlockchainService } from '../../../shared/blockchain/blockchain.service';
 
 export interface PresentCredentialInput {
   preparedMessage: string;
@@ -29,12 +33,16 @@ function extractCommitment(preparedMessageBase64: string): string {
 
 @Injectable()
 export class PresentCredentialUseCase {
+  private readonly logger = new Logger(PresentCredentialUseCase.name);
+
   constructor(
     @Inject(ELECTION_REPOSITORY)
     private readonly electionRepository: ElectionRepository,
     @Inject(PRESENTED_CREDENTIAL_REPOSITORY)
     private readonly presentedCredentialRepository: PresentedCredentialRepository,
     private readonly registrationSigning: RegistrationSigningService,
+    @Optional() private readonly blockchain?: BlockchainService,
+    @Optional() @Inject(APP_CONFIG) private readonly config?: AppConfig,
   ) {}
 
   async execute(
@@ -61,15 +69,88 @@ export class PresentCredentialUseCase {
       electionId,
       commitment,
     );
-    if (existing) {
-      throw new CredentialAlreadyPresentedError();
+    if (existing && existing.status === 'INSERTED') {
+      return existing;
     }
 
-    return this.presentedCredentialRepository.create({
-      electionId,
-      commitment,
-      preparedMessage: input.preparedMessage,
-      signature: input.signature,
-    });
+    let status: PresentedCredentialStatus = 'PENDING';
+    if (
+      election.onChainGroupId &&
+      this.config?.chain?.semaphoreRegistryAddress &&
+      this.blockchain
+    ) {
+      try {
+        const wallet = this.blockchain.getWallet();
+        const registry = new Contract(
+          this.config.chain.semaphoreRegistryAddress,
+          [
+            'function addMembers(uint256 groupId, uint256[] identityCommitments)',
+            'function getMerkleTreeRoot(uint256 groupId) view returns (uint256)',
+            'function hasMember(uint256 groupId, uint256 identityCommitment) view returns (bool)',
+          ],
+          wallet,
+        );
+
+        const groupId = BigInt(election.onChainGroupId);
+        const commitmentBigInt = BigInt(commitment);
+
+        const alreadyMember = await registry.hasMember(groupId, commitmentBigInt);
+        if (!alreadyMember) {
+          const nonce = await this.blockchain
+            .getProvider()
+            .getTransactionCount(wallet.address, 'latest');
+          const tx = await registry.addMembers(groupId, [commitmentBigInt], {
+            nonce,
+          });
+          await tx.wait();
+        }
+
+        const newRoot = (await registry.getMerkleTreeRoot(groupId)) as bigint;
+        await this.electionRepository.setMerkleRoot(electionId, newRoot.toString());
+        status = 'INSERTED';
+      } catch (err) {
+        this.logger.warn(
+          `No se pudo auto-insertar commitment on-chain para eleccion ${electionId}: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    if (existing) {
+      if (status === 'INSERTED' && existing.status !== 'INSERTED') {
+        return this.presentedCredentialRepository.updateStatus(
+          electionId,
+          commitment,
+          'INSERTED',
+        );
+      }
+      return existing;
+    }
+
+    try {
+      return await this.presentedCredentialRepository.create({
+        electionId,
+        commitment,
+        preparedMessage: input.preparedMessage,
+        signature: input.signature,
+        status,
+      });
+    } catch {
+      const concurrentExisting =
+        await this.presentedCredentialRepository.findByElectionAndCommitment(
+          electionId,
+          commitment,
+        );
+      if (concurrentExisting) {
+        if (status === 'INSERTED' && concurrentExisting.status !== 'INSERTED') {
+          return this.presentedCredentialRepository.updateStatus(
+            electionId,
+            commitment,
+            'INSERTED',
+          );
+        }
+        return concurrentExisting;
+      }
+      throw new CredentialAlreadyPresentedError();
+    }
   }
 }

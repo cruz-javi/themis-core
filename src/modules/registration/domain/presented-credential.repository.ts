@@ -1,14 +1,20 @@
-import { PresentedCredential } from './presented-credential.entity';
+import { PresentedCredential, PresentedCredentialStatus } from './presented-credential.entity';
 
 export interface CreatePresentedCredentialInput {
   electionId: string;
   commitment: string;
   preparedMessage: string;
   signature: string;
+  status?: PresentedCredentialStatus;
 }
 
 export interface PresentedCredentialRepository {
   create(input: CreatePresentedCredentialInput): Promise<PresentedCredential>;
+  updateStatus(
+    electionId: string,
+    commitment: string,
+    status: PresentedCredentialStatus,
+  ): Promise<PresentedCredential>;
   findByElectionAndCommitment(
     electionId: string,
     commitment: string,

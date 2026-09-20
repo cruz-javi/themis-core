@@ -18,7 +18,20 @@ export class PrismaPresentedCredentialRepository implements PresentedCredentialR
         commitment: input.commitment,
         preparedMessage: input.preparedMessage,
         signature: input.signature,
+        status: input.status ?? 'PENDING',
       },
+    });
+    return presentedCredentialToDomain(row);
+  }
+
+  async updateStatus(
+    electionId: string,
+    commitment: string,
+    status: any,
+  ): Promise<PresentedCredential> {
+    const row = await this.prisma.presentedCredential.update({
+      where: { electionId_commitment: { electionId, commitment } },
+      data: { status },
     });
     return presentedCredentialToDomain(row);
   }

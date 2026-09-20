@@ -2,7 +2,7 @@ import { Election } from '../../elections/domain/election.entity';
 import { ElectionClosedError, RegistrationWindowClosedError } from './registration.errors';
 
 export function assertRegistrationWindowOpen(election: Election): void {
-  if (election.estado !== 'REGISTRO_ABIERTO') {
+  if (election.estado !== 'REGISTRO_ABIERTO' && election.estado !== 'VOTACION_ABIERTA') {
     throw new RegistrationWindowClosedError();
   }
 }
